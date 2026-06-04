@@ -1,0 +1,29 @@
+{
+  "users": [
+    {
+      "name": "Mickael Tavenart",
+      "email": "mickael.tavenart@gmail.com",
+      "password": "$2b$10$QbjNNbhUa5/PhVSxzzSWcuuXqcyMsX47mNbnBPkEYzLAxFS1daqBi",
+      "initials": "MT",
+      "color": "#9FE1CB",
+      "textColor": "#085041",
+      "createdAt": "2026-05-24T15:30:44.042Z",
+      "id": "aDdL2aa"
+    },
+    {
+      "name": "Auré",
+      "email": "toto@gmail.com",
+      "password": "$2b$10$AgMtb5hcc7XxB5geaMGXNetrtODdmZ8K9lKC6UtR7zxLBtB2dm/ge",
+      "initials": "A",
+      "color": "#9FE1CB",
+      "textColor": "#085041",
+      "createdAt": "2026-05-29T10:08:51.238Z",
+      "id": "Hlf4BRM"
+    }
+  ],
+  "groups": [],
+  "members": [],
+  "expenses": [],
+  "payments": [],
+  "reminders": []
+}

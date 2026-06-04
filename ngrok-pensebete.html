@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pense-bête ngrok — NotreTab</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 13px;
+      color: #1a1a2e;
+      background: #fff;
+      padding: 32px 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* ── Header ── */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding-bottom: 16px;
+      border-bottom: 3px solid #1D9E75;
+      margin-bottom: 24px;
+    }
+    .logo {
+      width: 48px; height: 48px;
+      background: #1D9E75;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .header-text h1 { font-size: 20px; font-weight: 700; color: #1D9E75; }
+    .header-text p  { font-size: 12px; color: #666; margin-top: 2px; }
+
+    /* ── Sections ── */
+    .section {
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #1D9E75;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #e0f5ee;
+    }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; gap: 8px; }
+    .step {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: #f8fffe;
+      border: 1px solid #c8eedf;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .step-num {
+      width: 24px; height: 24px;
+      background: #1D9E75;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-body { flex: 1; }
+    .step-body strong { display: block; font-size: 13px; margin-bottom: 3px; color: #0d6e4f; }
+    .step-body p { font-size: 12px; color: #444; margin-bottom: 4px; }
+
+    /* ── Code blocks ── */
+    code {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      background: #1a1a2e;
+      color: #a8ff78;
+      padding: 2px 7px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .code-block {
+      background: #1a1a2e;
+      color: #a8ff78;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin-top: 5px;
+      line-height: 1.7;
+      white-space: pre;
+    }
+    .code-block .comment { color: #666; }
+    .code-block .highlight { color: #ffd700; }
+
+    /* ── Two columns ── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    /* ── Info box ── */
+    .info-box {
+      background: #fffbe6;
+      border: 1px solid #ffe082;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .info-box .info-title {
+      font-weight: 700; font-size: 12px; color: #b45309; margin-bottom: 4px;
+    }
+    .info-box p { font-size: 12px; color: #555; line-height: 1.6; }
+
+    .danger-box {
+      background: #fff5f5;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 10px 14px;
+    }
+    .danger-box .info-title { color: #b91c1c; }
+
+    /* ── Table ── */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th {
+      background: #1D9E75; color: #fff;
+      padding: 7px 10px; text-align: left;
+      font-weight: 600;
+    }
+    td { padding: 7px 10px; border-bottom: 1px solid #e8f5ee; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: #f8fffe; }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 11px;
+      color: #999;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    @media print {
+      body { padding: 20px 28px; }
+      .no-print { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="logo">N</div>
+    <div class="header-text">
+      <h1>Pense-bête ngrok — NotreTab</h1>
+      <p>Exposer l'application en externe pour tests mobiles · Avec Basic Auth</p>
+    </div>
+  </div>
+
+  <!-- ÉTAPES -->
+  <div class="section">
+    <div class="section-title">Utilisation (chaque session)</div>
+    <div class="steps">
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Lancer l'application</strong>
+          <p>Terminal 1 — dans le dossier du projet :</p>
+          <div class="code-block">npm run dev</div>
+          <p style="margin-top:5px;font-size:11px;color:#888;">Attendre que Vite affiche "ready" sur le port 5173</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Lancer le tunnel ngrok</strong>
+          <p>Terminal 2 — remplacer le mot de passe par le tien :</p>
+          <div class="code-block">ngrok http 5173 --basic-auth=<span class="highlight">"mickael:TonMotDePasse"</span></div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Récupérer l'URL publique</strong>
+          <p>ngrok affiche une ligne <strong>Forwarding</strong> :</p>
+          <div class="code-block">Forwarding  <span class="highlight">https://abc123xyz.ngrok-free.app</span>  →  http://localhost:5173</div>
+          <p style="margin-top:5px;font-size:11px;color:#888;">Cette URL est unique à chaque lancement. À envoyer sur ton téléphone.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Ouvrir sur mobile</strong>
+          <p>Saisir l'URL dans le navigateur → une fenêtre demande :</p>
+          <div class="code-block"><span class="comment">Identifiant :</span>  mickael
+<span class="comment">Mot de passe :</span> TonMotDePasse</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Arrêter le tunnel</strong>
+          <p>Dans le Terminal 2 :</p>
+          <div class="code-block">Ctrl + C</div>
+          <p style="margin-top:5px;font-size:11px;color:#888;">L'URL cesse immédiatement d'être accessible depuis l'extérieur.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- COMMANDES UTILES + SURVEILLANCE -->
+  <div class="two-col">
+
+    <div class="section">
+      <div class="section-title">Commandes utiles</div>
+      <table>
+        <tr><th>Commande</th><th>Usage</th></tr>
+        <tr><td><code>ngrok version</code></td><td>Vérifier l'installation</td></tr>
+        <tr>
+          <td><code>ngrok http 5173<br>--basic-auth="user:pwd"</code></td>
+          <td>Tunnel avec auth</td>
+        </tr>
+        <tr><td><code>ngrok status</code></td><td>Voir les tunnels actifs</td></tr>
+      </table>
+      <div style="margin-top:10px;">
+        <div class="info-box">
+          <div class="info-title">🔧 Configuration (une seule fois)</div>
+          <p>Associer ngrok à ton compte :<br>
+          <code>ngrok config add-authtoken TON_TOKEN</code><br>
+          Token disponible sur <strong>dashboard.ngrok.com</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Surveiller les requêtes (inspection)</div>
+      <div class="info-box">
+        <div class="info-title">📡 Interface locale</div>
+        <p>Pendant que ngrok tourne, ouvrir dans le navigateur du PC :</p>
+      </div>
+      <div class="code-block" style="margin-top:8px;">http://127.0.0.1:4040</div>
+      <p style="margin-top:8px;font-size:12px;color:#444;line-height:1.6;">
+        Tu vois en temps réel :<br>
+        · Toutes les requêtes entrantes<br>
+        · L'IP source de chaque appel<br>
+        · Le détail des headers / body<br>
+        · Un bouton <strong>Replay</strong> pour rejouer
+      </p>
+    </div>
+
+  </div>
+
+  <!-- SÉCURITÉ -->
+  <div class="section">
+    <div class="section-title">Règles de sécurité</div>
+    <div class="two-col">
+      <div class="danger-box">
+        <div class="info-title">⛔ À ne jamais faire</div>
+        <p>
+          · Laisser ngrok ouvert sans surveillance<br>
+          · Partager l'URL + identifiants publiquement<br>
+          · Utiliser en production avec de vraies données<br>
+          · Oublier d'arrêter le tunnel après les tests
+        </p>
+      </div>
+      <div class="info-box">
+        <div class="info-title">✅ Bonnes pratiques</div>
+        <p>
+          · Changer le mot de passe Basic Auth régulièrement<br>
+          · Surveiller l'interface 127.0.0.1:4040 pendant les tests<br>
+          · Fermer avec Ctrl+C dès la fin de session<br>
+          · Utiliser uniquement pour tests avec données fictives
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAPPEL PORTS -->
+  <div class="section">
+    <div class="section-title">Rappel ports NotreTab</div>
+    <table>
+      <tr><th>Service</th><th>Port</th><th>URL locale</th><th>Exposé par ngrok</th></tr>
+      <tr><td>Frontend Vite</td><td><strong>5173</strong></td><td>http://localhost:5173</td><td>✅ Oui (proxy inclus)</td></tr>
+      <tr><td>API json-server</td><td>3001</td><td>http://localhost:3001</td><td>Via proxy /api</td></tr>
+      <tr><td>Inspection ngrok</td><td>4040</td><td>http://127.0.0.1:4040</td><td>❌ Local uniquement</td></tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    <span>NotreTab — Pense-bête ngrok</span>
+    <span>Pour tests mobiles uniquement · Ne pas utiliser en production</span>
+  </div>
+
+</body>
+</html>

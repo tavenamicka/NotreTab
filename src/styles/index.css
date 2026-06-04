@@ -1,0 +1,34 @@
+/* ... existing CSS rules ... */
+
+<table class="table-factures">
+  <tr>
+    <th>Factures</th>
+  </tr>
+  <tr>
+    <td>
+      <div class="facture paid">
+        <!-- contenu de la facture payée -->
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <div class="facture pending">
+        <!-- contenu de la facture en attente -->
+      </div>
+    </td>
+  </tr>
+</table>
+
+
+
+
+    <tr>
+      <td>
+        <div class="facture pending">
+          <!-- contenu de la facture en attente -->
+        </div>
+      </td>
+    </tr>
+  </div>
+</div>

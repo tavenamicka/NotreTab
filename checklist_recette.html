@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checklist Recette — NotreTab</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #111827;
+      --bg2:        #1f2937;
+      --bg3:        #374151;
+      --border:     #374151;
+      --text:       #f9fafb;
+      --muted:      #9ca3af;
+      --green:      #22c55e;
+      --green-dim:  #14532d;
+      --yellow:     #fbbf24;
+      --red:        #ef4444;
+      --blue:       #3b82f6;
+      --radius:     8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 24px 16px 60px;
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    header {
+      max-width: 900px;
+      margin: 0 auto 28px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+    }
+    header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--green);
+      letter-spacing: -0.5px;
+    }
+    header p { color: var(--muted); margin-top: 4px; font-size: 13px; }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .meta-field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .meta-field input {
+      width: 100%;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+    .meta-field input:focus { outline: 2px solid var(--green); border-color: transparent; }
+
+    /* ── Progress bar ─────────────────────────────────────── */
+    .progress-bar-wrap {
+      max-width: 900px;
+      margin: 0 auto 24px;
+      position: sticky;
+      top: 8px;
+      z-index: 10;
+    }
+    .progress-bar-bg {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.5);
+    }
+    .progress-track {
+      flex: 1;
+      height: 8px;
+      background: var(--bg3);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    #progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green) 0%, #4ade80 100%);
+      border-radius: 99px;
+      transition: width .3s ease;
+    }
+    #progress-label {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      color: var(--text);
+      min-width: 90px;
+      text-align: right;
+    }
+
+    /* ── Sections ─────────────────────────────────────────── */
+    main { max-width: 900px; margin: 0 auto; }
+
+    .section {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--bg3);
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-header:hover { background: #4b5563; }
+    .section-icon { font-size: 16px; }
+    .section-title {
+      font-weight: 700;
+      font-size: 14px;
+      flex: 1;
+    }
+    .section-count {
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--bg);
+      border-radius: 99px;
+      padding: 2px 8px;
+    }
+    .section-toggle { color: var(--muted); font-size: 12px; transition: transform .2s; }
+    .section-body { display: block; }
+    .section-body.collapsed { display: none; }
+    .section-toggle.open { transform: rotate(180deg); }
+
+    /* ── Test rows ────────────────────────────────────────── */
+    .test-row {
+      display: grid;
+      grid-template-columns: 32px 1fr 260px;
+      align-items: start;
+      gap: 12px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
+    }
+    .test-row:last-child { border-bottom: none; }
+    .test-row:hover { background: rgba(255,255,255,.02); }
+    .test-row.done { background: rgba(34,197,94,.04); }
+
+    /* checkbox */
+    .test-row input[type="checkbox"] {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 2px;
+      flex-shrink: 0;
+      background: var(--bg);
+      position: relative;
+      transition: background .15s, border-color .15s;
+    }
+    .test-row input[type="checkbox"]:checked {
+      background: var(--green);
+      border-color: var(--green);
+    }
+    .test-row input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      left: 4px; top: 1px;
+      width: 6px; height: 10px;
+      border: 2px solid #fff;
+      border-top: none; border-left: none;
+      transform: rotate(45deg);
+    }
+
+    /* label */
+    .test-label {
+      padding-top: 2px;
+    }
+    .test-label strong {
+      display: block;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text);
+    }
+    .test-row.done .test-label strong { color: var(--muted); text-decoration: line-through; }
+    .test-label span {
+      font-size: 12px;
+      color: var(--muted);
+      display: block;
+      margin-top: 1px;
+    }
+    .badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      margin-right: 5px;
+      vertical-align: middle;
+      text-transform: uppercase;
+    }
+    .badge-critical { background: rgba(239,68,68,.2); color: var(--red); }
+    .badge-important { background: rgba(251,191,36,.15); color: var(--yellow); }
+    .badge-info { background: rgba(59,130,246,.15); color: var(--blue); }
+
+    /* textarea notes */
+    .test-notes {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 12px;
+      padding: 6px 8px;
+      resize: vertical;
+      min-height: 48px;
+      font-family: inherit;
+      line-height: 1.4;
+    }
+    .test-notes:focus { outline: 2px solid var(--blue); border-color: transparent; }
+    .test-notes::placeholder { color: #6b7280; }
+
+    /* status select */
+    .test-status {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .status-select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 12px;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    .status-select:focus { outline: 2px solid var(--blue); border-color: transparent; }
+    .status-select option { background: var(--bg2); }
+
+    /* ── Actions ──────────────────────────────────────────── */
+    .actions {
+      max-width: 900px;
+      margin: 24px auto 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: none;
+      border-radius: var(--radius);
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-green { background: var(--green); color: #000; }
+    .btn-gray { background: var(--bg3); color: var(--text); }
+    .btn-red { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid rgba(239,68,68,.3); }
+
+    /* ── Summary panel ────────────────────────────────────── */
+    #summary {
+      max-width: 900px;
+      margin: 20px auto 0;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: none;
+    }
+    #summary h2 { font-size: 15px; margin-bottom: 12px; }
+    #summary-content { font-size: 13px; color: var(--muted); white-space: pre-wrap; font-family: monospace; }
+
+    /* ── Print ────────────────────────────────────────────── */
+    @media print {
+      body { background: #fff; color: #000; padding: 16px; }
+      :root { --bg: #fff; --bg2: #f9fafb; --bg3: #f3f4f6; --border: #e5e7eb; --text: #111; --muted: #6b7280; }
+      .progress-bar-wrap, .actions, #summary { display: none !important; }
+      .section { break-inside: avoid; }
+      .test-notes { border: 1px solid #d1d5db; min-height: 40px; }
+      header { border-bottom: 2px solid #000; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── HEADER ─────────────────────────────────────────────────── -->
+<header>
+  <h1>NotreTab — Checklist de Recette</h1>
+  <p>Remplissez ce formulaire avant chaque mise en production. Cochez chaque test validé et ajoutez vos notes.</p>
+  <div class="meta-grid">
+    <div class="meta-field">
+      <label>Testeur</label>
+      <input type="text" id="meta-testeur" placeholder="Prénom Nom" />
+    </div>
+    <div class="meta-field">
+      <label>Date de recette</label>
+      <input type="date" id="meta-date" />
+    </div>
+    <div class="meta-field">
+      <label>Version / Sprint</label>
+      <input type="text" id="meta-version" placeholder="ex: Sprint PWA" />
+    </div>
+    <div class="meta-field">
+      <label>Environnement</label>
+      <input type="text" id="meta-env" placeholder="ex: localhost:5173" />
+    </div>
+  </div>
+</header>
+
+<!-- ─── PROGRESS ───────────────────────────────────────────────── -->
+<div class="progress-bar-wrap">
+  <div class="progress-bar-bg">
+    <div class="progress-track">
+      <div id="progress-fill" style="width:0%"></div>
+    </div>
+    <span id="progress-label">0 / 0 validés</span>
+  </div>
+</div>
+
+<!-- ─── CHECKLIST ─────────────────────────────────────────────── -->
+<main id="checklist">
+
+  <!-- 1 ─ Démarrage & environnement -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">⚙️</span>
+      <span class="section-title">1 — Démarrage &amp; Environnement</span>
+      <span class="section-count" id="count-1">0 / 5</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-critical">Critique</span>npm run dev démarre sans erreur</strong>
+          <span>Front sur :5173 et json-server sur :3001 tous les deux actifs</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes / erreurs observées…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-critical">Critique</span>Aucune erreur console au démarrage</strong>
+          <span>Ouvrir DevTools → Console, vérifier qu'aucune erreur rouge n'apparaît</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes / erreurs observées…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>74 / 74 tests unitaires passent</strong>
+          <span>Exécuter <code>npm test</code> et vérifier le résultat final</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Nombre de tests passés / échoués…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>npm run build sans erreur</strong>
+          <span>Vérifier que le bundle de production se génère correctement dans dist/</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Warnings ou erreurs de build…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>db.json chargé et cohérent</strong>
+          <span>GET /api/users, /api/groups, /api/members répondent avec des données valides</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes / anomalies de données…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 2 ─ Authentification -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">🔐</span>
+      <span class="section-title">2 — Authentification</span>
+      <span class="section-count" id="count-2">0 / 5</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-critical">Critique</span>Page de login s'affiche à l'ouverture</strong>
+          <span>L'utilisateur non connecté est redirigé vers /login automatiquement</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-critical">Critique</span>Connexion avec le compte de test</strong>
+          <span>mickael.tavenart@gmail.com — la session s'ouvre et le dashboard s'affiche</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Message d'erreur sur credentials invalides</strong>
+          <span>Email inconnu ou mauvais mot de passe : toast ou message d'erreur affiché</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Message affiché…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Déconnexion fonctionne</strong>
+          <span>Clic sur "Déconnexion" → retour page login, session effacée</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Profil utilisateur éditable</strong>
+          <span>Page Profile — modification nom / email sauvegardée</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 3 ─ Dashboard & Navigation -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">🏠</span>
+      <span class="section-title">3 — Dashboard &amp; Navigation</span>
+      <span class="section-count" id="count-3">0 / 6</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-critical">Critique</span>Dashboard hub s'affiche</strong>
+          <span>Les deux modules (participation ponctuelle + budget) sont visibles</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Navigation sidebar fonctionne</strong>
+          <span>Tous les liens (Dashboard, Historique, Membres, Rappels, Profil) naviguent correctement</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Page Historique</strong>
+          <span>Liste des transactions/dépenses affichée avec dates et montants</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Page Rappels</strong>
+          <span>Rappels de paiements affichés, actions disponibles</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Stagger animations dashboard</strong>
+          <span>Les cartes apparaissent en cascade (délai 40/100/160/220ms)</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Toasts de notification</strong>
+          <span>Actions déclenchent bien des toasts (success/error/info) avec animation entrée/sortie</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 4 ─ Groupes -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">👥</span>
+      <span class="section-title">4 — Gestion des Groupes</span>
+      <span class="section-count" id="count-4">0 / 7</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-critical">Critique</span>Créer un groupe Budget (type Temporel)</strong>
+          <span>Sélecteur Temporel/Thématique fonctionnel, groupe créé avec type 'budget'</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Créer un groupe Occasionnel</strong>
+          <span>Groupe de type 'occasional' créé et visible dans la liste</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>BudgetDashboard — vue annuelle</strong>
+          <span>Grille 12 mois affichée, KPIs du budget calculés correctement</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Modifier un groupe existant</strong>
+          <span>Renommer un groupe, sauvegarder → nom mis à jour partout</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-important">Important</span>Supprimer un groupe (résilience)</strong>
+          <span>Retry 500, 404 = succès, sleep 60ms entre deletes — vérifier qu'aucun crash 500 n'est permanent</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Modal GroupModal — animations</strong>
+          <span>Ouverture fade+scale (170ms), fermeture correcte, pas de flash visuel</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>GroupModal — accessibilité</strong>
+          <span>role="dialog", aria-modal, aria-labelledby présents, focus piégé dans le modal</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 5 ─ Dépenses -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">💳</span>
+      <span class="section-title">5 — Dépenses (ExpenseWizard)</span>
+      <span class="section-count" id="count-5">0 / 7</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-critical">Critique</span>Wizard ajout dépense — 3 étapes</strong>
+          <span>Navigation étape 1 → 2 → 3 → confirmation, transitions step-forward correctes</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-critical">Critique</span>Dépense sauvegardée en base</strong>
+          <span>Après confirmation : dépense visible dans la liste, montant et répartition corrects</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Modifier une dépense existante</strong>
+          <span>Wizard pré-rempli avec les valeurs actuelles, modifications sauvegardées</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Supprimer une dépense</strong>
+          <span>Dépense retirée de la liste, balances recalculées</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Filtres et timeline</strong>
+          <span>Filtres par catégorie, date, membre fonctionnent — liste se met à jour</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Export CSV</strong>
+          <span>Bouton d'export génère un fichier CSV téléchargeable avec les dépenses filtrées</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>KPIs dépenses affichés</strong>
+          <span>Total dépensé, ma part, solde — valeurs cohérentes avec les données</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 6 ─ Balances & Paiements -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">⚖️</span>
+      <span class="section-title">6 — Balances &amp; Paiements</span>
+      <span class="section-count" id="count-6">0 / 5</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-critical">Critique</span>Calcul des balances correct</strong>
+          <span>computeBalances() — chaque membre doit/reçoit est cohérent avec les dépenses saisies</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Valeur observée vs attendue…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Simplification des dettes</strong>
+          <span>simplifyDebts() — nombre de transactions minimal, pas de circuit</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Flash solde positif / négatif</strong>
+          <span>Classes .balance-pos (vert) et .balance-neg (rouge) apparaissent correctement</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Enregistrer un paiement (PaymentModal)</strong>
+          <span>Paiement sauvegardé, balance mise à jour, modal se ferme proprement</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Ma part — computeMyShare()</strong>
+          <span>La part calculée pour l'utilisateur connecté est correcte sur diverses dépenses</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 7 ─ Membres -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">🧑‍🤝‍🧑</span>
+      <span class="section-title">7 — Membres</span>
+      <span class="section-count" id="count-7">0 / 5</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Inviter un membre (InviteModal)</strong>
+          <span>Saisir email → invitation créée, membre visible dans la liste</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-important">Important</span>Ajouter un invité (Guest)</strong>
+          <span>isGuest:true, pas de userId dans le payload (piège getRemovable) — champs requis présents</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Vérifier via DevTools Network que userId est absent du payload…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Badge invité (GuestBadge)</strong>
+          <span>Les membres invités affichent un badge distinctif dans la liste</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong><span class="badge badge-important">Important</span>Supprimer un membre</strong>
+          <span>DELETE séquentiel (pas parallèle), sleep 60ms — pas de crash 500 permanent</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Avatar membres</strong>
+          <span>Initiales, couleur de fond et textColor affichés correctement pour tous les membres</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 8 ─ ParticipationWizard -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">🪄</span>
+      <span class="section-title">8 — ParticipationWizard</span>
+      <span class="section-count" id="count-8">0 / 4</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Wizard 3 étapes s'ouvre depuis le dashboard</strong>
+          <span>Bouton module ponctuel → wizard affiché, étape 1 visible</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Navigation avant/arrière entre étapes</strong>
+          <span>Transitions step-forward et step-back correctes (200ms), données conservées</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Groupe éphémère invisible pour l'utilisateur</strong>
+          <span>Type 'ponctuel' créé en base mais non affiché dans la liste des groupes normaux</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Confirmation finale — résultat affiché</strong>
+          <span>Étape 3 : récapitulatif correct, fermeture propre du wizard</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 9 ─ Mobile & Responsive -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">📱</span>
+      <span class="section-title">9 — Mobile &amp; Responsive</span>
+      <span class="section-count" id="count-9">0 / 5</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Sidebar drawer mobile fonctionne</strong>
+          <span>En dessous de 600px : sidebar masquée, hamburger ☰ visible dans la topbar</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Ouverture / fermeture drawer</strong>
+          <span>Clic hamburger → drawer glisse, backdrop sombre, clic backdrop ferme</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Auto-fermeture sur navigation</strong>
+          <span>Cliquer un lien dans le drawer → drawer se ferme automatiquement</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Touch interactions fluides</strong>
+          <span>Scroll, tap, swipe — pas de lag ni zone de tap manquée sur mobile réel / émulé</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Appareil testé…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Wizards utilisables sur mobile</strong>
+          <span>ExpenseWizard et ParticipationWizard — formulaires accessibles et lisibles sur petit écran</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 10 ─ PWA -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">📲</span>
+      <span class="section-title">10 — PWA &amp; Offline</span>
+      <span class="section-count" id="count-10">0 / 6</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Manifest chargé (DevTools → Application → Manifest)</strong>
+          <span>Nom, icônes 192×192 et 512×512, start_url, display:standalone, theme_color visibles</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Service Worker actif</strong>
+          <span>DevTools → Application → Service Workers : status "activated and running", scope /</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Cache notretab-v1-assets peuplé</strong>
+          <span>DevTools → Cache Storage → contient index.html, favicon.svg, icon-192.svg, icon-512.svg</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Mode Offline — app charge depuis le cache</strong>
+          <span>DevTools → Network → Offline → Ctrl+R : index.html servi, navigation possible</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Installation PWA possible</strong>
+          <span>Chrome Desktop : icône ↙️ dans la barre d'adresse → installer → fenêtre standalone</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Lighthouse PWA score ≥ 90</strong>
+          <span>DevTools → Lighthouse → PWA → Analyze page load</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Score obtenu…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 11 ─ Accessibilité -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">♿</span>
+      <span class="section-title">11 — Accessibilité &amp; ARIA</span>
+      <span class="section-count" id="count-11">0 / 4</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>role="dialog" et aria-modal sur tous les modaux</strong>
+          <span>Inspecter le DOM lors de l'ouverture d'un modal (GroupModal, ExpenseWizard, etc.)</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Focus piégé dans les modaux (focus trap)</strong>
+          <span>Tab / Shift+Tab ne sort pas du modal quand il est ouvert</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Labels htmlFor/id sur tous les formulaires</strong>
+          <span>Chaque input possède un label associé (htmlFor = id), vérifier via DevTools → Accessibility</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Toasts — role="alert" présent</strong>
+          <span>Inspecter un toast dans le DOM : role="alert" pour la lecture par les screen readers</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 12 ─ Performances -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection(this)">
+      <span class="section-icon">⚡</span>
+      <span class="section-title">12 — Performances</span>
+      <span class="section-count" id="count-12">0 / 4</span>
+      <span class="section-toggle open">▼</span>
+    </div>
+    <div class="section-body">
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Pas de requête N+1 sur le Dashboard</strong>
+          <span>DevTools → Network : le chargement initial ne multiplie pas les requêtes inutilement</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Nombre de requêtes observé…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>Pas de re-render inutile visible</strong>
+          <span>React DevTools Profiler — les composants mémoïsés (useCallback/useMemo) ne re-render pas au moindre changement</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>AbortController sur les requêtes longues</strong>
+          <span>Si on navigue avant la fin d'un fetch (10s timeout), pas d'erreur "Can't update unmounted component"</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+      <div class="test-row">
+        <input type="checkbox" onchange="onCheck(this)" />
+        <div class="test-label">
+          <strong>BudgetDashboard — grille 12 mois sans lag</strong>
+          <span>Affichage fluide même avec plusieurs dépenses par mois, scroll sans saccade</span>
+        </div>
+        <div class="test-status">
+          <select class="status-select"><option value="">— Statut —</option><option>✅ OK</option><option>❌ KO</option><option>⚠️ Dégradé</option></select>
+          <textarea class="test-notes" placeholder="Notes…"></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- ─── ACTIONS ───────────────────────────────────────────────── -->
+<div class="actions">
+  <button class="btn btn-green" onclick="showSummary()">Générer le rapport</button>
+  <button class="btn btn-gray" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
+  <button class="btn btn-gray" onclick="expandAll()">Tout déplier</button>
+  <button class="btn btn-gray" onclick="collapseAll()">Tout replier</button>
+  <button class="btn btn-red" onclick="resetAll()">Réinitialiser</button>
+</div>
+
+<!-- ─── RAPPORT ───────────────────────────────────────────────── -->
+<div id="summary">
+  <h2>Rapport de recette</h2>
+  <pre id="summary-content"></pre>
+</div>
+
+<!-- ─── SCRIPT ────────────────────────────────────────────────── -->
+<script>
+  // Date par défaut
+  document.getElementById('meta-date').value = new Date().toISOString().slice(0, 10);
+
+  function onCheck(cb) {
+    const row = cb.closest('.test-row');
+    row.classList.toggle('done', cb.checked);
+    updateProgress();
+    updateSectionCount(row.closest('.section'));
+  }
+
+  function updateProgress() {
+    const all = document.querySelectorAll('.test-row input[type="checkbox"]');
+    const done = [...all].filter(c => c.checked).length;
+    const pct = all.length ? Math.round(done / all.length * 100) : 0;
+    document.getElementById('progress-fill').style.width = pct + '%';
+    document.getElementById('progress-label').textContent = done + ' / ' + all.length + ' validés (' + pct + '%)';
+  }
+
+  function updateSectionCount(section) {
+    const all = section.querySelectorAll('.test-row input[type="checkbox"]');
+    const done = [...all].filter(c => c.checked).length;
+    const countEl = section.querySelector('.section-count');
+    if (countEl) countEl.textContent = done + ' / ' + all.length;
+  }
+
+  function toggleSection(header) {
+    const body = header.nextElementSibling;
+    const toggle = header.querySelector('.section-toggle');
+    const collapsed = body.classList.toggle('collapsed');
+    toggle.classList.toggle('open', !collapsed);
+  }
+
+  function expandAll() {
+    document.querySelectorAll('.section-body').forEach(b => b.classList.remove('collapsed'));
+    document.querySelectorAll('.section-toggle').forEach(t => t.classList.add('open'));
+  }
+
+  function collapseAll() {
+    document.querySelectorAll('.section-body').forEach(b => b.classList.add('collapsed'));
+    document.querySelectorAll('.section-toggle').forEach(t => t.classList.remove('open'));
+  }
+
+  function resetAll() {
+    if (!confirm('Réinitialiser tous les tests et notes ?')) return;
+    document.querySelectorAll('.test-row input[type="checkbox"]').forEach(c => { c.checked = false; });
+    document.querySelectorAll('.test-row').forEach(r => r.classList.remove('done'));
+    document.querySelectorAll('.test-notes').forEach(t => { t.value = ''; });
+    document.querySelectorAll('.status-select').forEach(s => { s.value = ''; });
+    document.querySelectorAll('.section').forEach(s => updateSectionCount(s));
+    document.getElementById('summary').style.display = 'none';
+    updateProgress();
+  }
+
+  function showSummary() {
+    const testeur = document.getElementById('meta-testeur').value || '(non renseigné)';
+    const date    = document.getElementById('meta-date').value   || '(non renseignée)';
+    const version = document.getElementById('meta-version').value || '(non renseignée)';
+    const env     = document.getElementById('meta-env').value    || '(non renseigné)';
+
+    const all  = [...document.querySelectorAll('.test-row input[type="checkbox"]')];
+    const done = all.filter(c => c.checked).length;
+    const pct  = all.length ? Math.round(done / all.length * 100) : 0;
+
+    let lines = [];
+    lines.push('='.repeat(60));
+    lines.push('RAPPORT DE RECETTE — NotreTab');
+    lines.push('='.repeat(60));
+    lines.push('Testeur   : ' + testeur);
+    lines.push('Date      : ' + date);
+    lines.push('Version   : ' + version);
+    lines.push('Env       : ' + env);
+    lines.push('Résultat  : ' + done + ' / ' + all.length + ' tests validés (' + pct + '%)');
+    lines.push('');
+
+    document.querySelectorAll('.section').forEach(section => {
+      const title = section.querySelector('.section-title').textContent.trim();
+      const rows  = section.querySelectorAll('.test-row');
+      lines.push('─'.repeat(60));
+      lines.push(title);
+      lines.push('─'.repeat(60));
+      rows.forEach(row => {
+        const cb     = row.querySelector('input[type="checkbox"]');
+        const label  = row.querySelector('.test-label strong').textContent.replace(/\s+/g, ' ').trim();
+        const status = row.querySelector('.status-select').value || '—';
+        const notes  = row.querySelector('.test-notes').value.trim();
+        const icon   = cb.checked ? '✅' : '❌';
+        lines.push(icon + ' ' + label);
+        lines.push('   Statut : ' + status);
+        if (notes) lines.push('   Notes  : ' + notes.replace(/\n/g, '\n            '));
+        lines.push('');
+      });
+    });
+
+    lines.push('='.repeat(60));
+    const ko = all.filter(c => !c.checked).length;
+    if (ko === 0) {
+      lines.push('✅ TOUS LES TESTS VALIDÉS — PRÊT POUR LA PRODUCTION');
+    } else {
+      lines.push('⚠️  ' + ko + ' test(s) non validé(s) — vérifier avant mise en production');
+    }
+    lines.push('='.repeat(60));
+
+    document.getElementById('summary-content').textContent = lines.join('\n');
+    const summaryEl = document.getElementById('summary');
+    summaryEl.style.display = 'block';
+    summaryEl.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // Init counts
+  document.querySelectorAll('.section').forEach(s => updateSectionCount(s));
+  updateProgress();
+</script>
+
+</body>
+</html>
