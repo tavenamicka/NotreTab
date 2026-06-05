@@ -3,14 +3,13 @@
  * Stratégie : Cache-first pour assets, Network-first pour l'API
  */
 
-const CACHE_VERSION = 'notretab-v1';
+const CACHE_VERSION = 'notretab-v2';
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 
-// Assets statiques à mettre en cache au install
+// Ne pas pré-cacher index.html — il doit toujours venir du réseau
+// pour que le bon bundle JS (hash Vite) soit référencé après déploiement
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
   '/favicon.svg',
   '/icon-192.svg',
   '/icon-512.svg'
@@ -91,6 +90,12 @@ self.addEventListener('fetch', (event) => {
           });
         })
     );
+    return;
+  }
+
+  // index.html : toujours réseau (sinon le vieux bundle JS est servi après déploiement)
+  if (url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(fetch(request).catch(() => caches.match('/index.html')));
     return;
   }
 
