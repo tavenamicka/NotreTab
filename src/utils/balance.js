@@ -7,7 +7,7 @@ export function computeBalances(expenses, payments, members) {
   members.forEach(m => bal[String(m.id)] = 0)
 
   expenses.forEach(exp => {
-    const splitIds = exp.splitBetween.map(String)
+    const splitIds = (exp.splitBetween ?? []).map(String)
     const payerId = String(exp.paidById)
     if (bal[payerId] !== undefined) bal[payerId] += exp.amount
 
@@ -75,7 +75,7 @@ export function simplifyDebts(balances) {
 export function computeMyShare(exp, memberId) {
   if (!memberId) return null
   const mid = String(memberId)
-  const splitIds = exp.splitBetween.map(String)
+  const splitIds = (exp.splitBetween ?? []).map(String)
   if (!splitIds.includes(mid)) return null
   if (exp.splitMode === 'custom' && exp.customShares?.[mid])
     return exp.amount * parseFloat(exp.customShares[mid]) / 100
