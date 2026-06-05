@@ -1,42 +1,45 @@
-import bcrypt from 'bcryptjs'
+import { supabase } from './supabase'
 
-const SESSION_KEY = 'notretab_user'
-const SALT_ROUNDS = 10
-
-export function getSession() {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY)
-    return raw ? JSON.parse(raw) : null
-  } catch { return null }
+export async function getSession() {
+  const { data } = await supabase.auth.getSession()
+  return data.session?.user ?? null
 }
 
-export function setSession(user) {
-  const { password, ...safe } = user
-  localStorage.setItem(SESSION_KEY, JSON.stringify(safe))
+export async function login(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) throw new Error(error.message)
+  return data.user
 }
 
-export function clearSession() {
-  localStorage.removeItem(SESSION_KEY)
+export async function register(email, password, meta) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: meta }
+  })
+  if (error) throw new Error(error.message)
+  if (!data.user?.identities?.length) throw new Error('Un compte avec cet email existe déjà.')
+  return data.user
 }
 
-/** Hache un mot de passe avec bcrypt. */
-export function hashPassword(password) {
-  return bcrypt.hash(password, SALT_ROUNDS)
+export async function logout() {
+  await supabase.auth.signOut()
 }
 
-/**
- * Vérifie un mot de passe contre son hash bcrypt.
- * Supporte le fallback pour les anciens comptes démo en texte clair
- * (détectés à l'absence du préfixe $2b$) — migration transparente.
- */
-export function verifyPassword(password, stored) {
-  if (!stored) return Promise.resolve(false)
-  // Ancien compte en texte clair (avant migration)
-  if (!stored.startsWith('$2')) return Promise.resolve(stored === password)
-  return bcrypt.compare(password, stored)
+export async function updateUser(meta) {
+  const { data, error } = await supabase.auth.updateUser({ data: meta })
+  if (error) throw new Error(error.message)
+  return data.user
 }
 
-/** Indique si un hash doit être migré (texte clair détecté). */
-export function isLegacyPassword(stored) {
-  return Boolean(stored) && !stored.startsWith('$2')
+export async function resetPassword(email, redirectTo) {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+  if (error) throw new Error(error.message)
 }
+
+export async function updatePassword(password) {
+  const { data, error } = await supabase.auth.updateUser({ password })
+  if (error) throw new Error(error.message)
+  return data.user
+}
+

@@ -23,8 +23,9 @@ export const BUDGET_THEMES = [
 const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
   'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
 
-const CUR_YEAR  = new Date().getFullYear()
-const CUR_MONTH = new Date().getMonth() + 1
+const _now      = new Date()
+const CUR_YEAR  = _now.getFullYear()
+const CUR_MONTH = _now.getMonth() + 1
 const YEAR_OPTIONS = Array.from({ length: 7 }, (_, i) => CUR_YEAR - 1 + i)
 
 function buildSubgroupName(mode, month, year) {
@@ -97,12 +98,11 @@ export default function GroupModal({ open, onClose, onSaved, groups = [], parent
     try {
       const groupPayload = {
         name: effectiveName,
-        color: selectedParent
-          ? (groups.find(g => String(g.id) === String(selectedParent))?.color || color)
-          : color,
+        color: selectedParent ? (parentGroup?.color || color) : color,
         initials,
         parentId: selectedParent || null,
         type: selectedParent ? null : type,
+        createdBy: user.id,
         createdAt: new Date().toISOString(),
       }
 
@@ -257,7 +257,7 @@ export default function GroupModal({ open, onClose, onSaved, groups = [], parent
           </select>
           {isSubgroup && (
             <div style={{ marginTop: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-              Ce groupe apparaîtra sous "{groups.find(g => String(g.id) === String(selectedParent))?.name}"
+              Ce groupe apparaîtra sous "{parentGroup?.name}"
             </div>
           )}
         </div>

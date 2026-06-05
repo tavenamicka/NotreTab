@@ -1,83 +1,176 @@
-const BASE = '/api'
-const TIMEOUT_MS = 10_000
-
-async function req(path, options = {}) {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
-  try {
-    const res = await fetch(`${BASE}${path}`, {
-      headers: { 'Content-Type': 'application/json' },
-      ...options,
-      body: options.body ? JSON.stringify(options.body) : undefined,
-      signal: controller.signal,
-    })
-    if (!res.ok) throw new Error(`API error ${res.status}`)
-    if (res.status === 204) return null
-    return res.json()
-  } finally {
-    clearTimeout(timer)
-  }
-}
+import { supabase } from './supabase'
 
 export const api = {
-  // Auth (simulated via users table)
-  getUsers: () => req('/users'),
-  getUserByEmail: (email) => req(`/users?email=${encodeURIComponent(email)}`),
-  createUser: (data) => req('/users', { method: 'POST', body: data }),
-  updateUser: (id, data) => req(`/users/${id}`, { method: 'PATCH', body: data }),
-  deleteUser: (id) => req(`/users/${id}`, { method: 'DELETE' }),
-
   // Groups
-  getGroups: () => req('/groups'),
-  getGroup: (id) => req(`/groups/${id}`),
-  createGroup: (data) => req('/groups', { method: 'POST', body: data }),
-  updateGroup: (id, data) => req(`/groups/${id}`, { method: 'PATCH', body: data }),
-  deleteGroup: (id) => req(`/groups/${id}`, { method: 'DELETE' }),
+  getGroups: async () => {
+    const { data, error } = await supabase.from('groups').select('*')
+    if (error) throw new Error(error.message)
+    return data
+  },
+  getGroup: async (id) => {
+    const { data, error } = await supabase.from('groups').select('*').eq('id', id).single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  createGroup: async (body) => {
+    const { data, error } = await supabase.from('groups').insert(body).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  updateGroup: async (id, body) => {
+    const { data, error } = await supabase.from('groups').update(body).eq('id', id).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  deleteGroup: async (id) => {
+    const { error } = await supabase.from('groups').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    return null
+  },
 
   // Members
-  getMembersByGroup: (groupId) => req(`/members?groupId=${groupId}`),
-  getMembersByUser: (userId) => req(`/members?userId=${userId}`),
-  addMember: (data) => {
-    const safe = { ...data }
+  getMembersByGroup: async (groupId) => {
+    const { data, error } = await supabase.from('members').select('*').eq('groupId', groupId)
+    if (error) throw new Error(error.message)
+    return data
+  },
+  getMembersByUser: async (userId) => {
+    const { data, error } = await supabase.from('members').select('*').eq('userId', userId)
+    if (error) throw new Error(error.message)
+    return data
+  },
+  addMember: async (body) => {
+    const safe = { ...body }
     if (safe.userId == null) delete safe.userId
     if (safe.invitedByUserId == null) delete safe.invitedByUserId
-    return req('/members', { method: 'POST', body: safe })
+    const { data, error } = await supabase.from('members').insert(safe).select().single()
+    if (error) throw new Error(error.message)
+    return data
   },
-  updateMember: (id, data) => req(`/members/${id}`, { method: 'PATCH', body: data }),
-  deleteMember: (id) => req(`/members/${id}`, { method: 'DELETE' }),
+  updateMember: async (id, body) => {
+    const { data, error } = await supabase.from('members').update(body).eq('id', id).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  deleteMember: async (id) => {
+    const { error } = await supabase.from('members').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    return null
+  },
 
   // Expenses
-  getExpensesByGroup: (groupId) => req(`/expenses?groupId=${groupId}&_sort=date&_order=desc`),
-  createExpense: (data) => req('/expenses', { method: 'POST', body: data }),
-  updateExpense: (id, data) => req(`/expenses/${id}`, { method: 'PUT', body: data }),
-  deleteExpense: (id) => req(`/expenses/${id}`, { method: 'DELETE' }),
+  getExpensesByGroup: async (groupId) => {
+    const { data, error } = await supabase.from('expenses').select('*')
+      .eq('groupId', groupId).order('date', { ascending: false })
+    if (error) throw new Error(error.message)
+    return data
+  },
+  createExpense: async (body) => {
+    const { data, error } = await supabase.from('expenses').insert(body).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  updateExpense: async (id, body) => {
+    const { data, error } = await supabase.from('expenses').update(body).eq('id', id).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  deleteExpense: async (id) => {
+    const { error } = await supabase.from('expenses').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    return null
+  },
 
   // Payments
-  getPaymentsByGroup: (groupId) => req(`/payments?groupId=${groupId}&_sort=createdAt&_order=desc`),
-  createPayment: (data) => req('/payments', { method: 'POST', body: data }),
-  deletePayment: (id) => req(`/payments/${id}`, { method: 'DELETE' }),
+  getPaymentsByGroup: async (groupId) => {
+    const { data, error } = await supabase.from('payments').select('*')
+      .eq('groupId', groupId).order('createdAt', { ascending: false })
+    if (error) throw new Error(error.message)
+    return data
+  },
+  createPayment: async (body) => {
+    const { data, error } = await supabase.from('payments').insert(body).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  deletePayment: async (id) => {
+    const { error } = await supabase.from('payments').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    return null
+  },
 
   // Reminders
-  getRemindersByGroup: (groupId) => req(`/reminders?groupId=${groupId}`),
-  createReminder: (data) => req('/reminders', { method: 'POST', body: data }),
-  updateReminder: (id, data) => req(`/reminders/${id}`, { method: 'PATCH', body: data }),
+  getRemindersByGroup: async (groupId) => {
+    const { data, error } = await supabase.from('reminders').select('*').eq('groupId', groupId)
+    if (error) throw new Error(error.message)
+    return data
+  },
+  createReminder: async (body) => {
+    const { data, error } = await supabase.from('reminders').insert(body).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
+  updateReminder: async (id, body) => {
+    const { data, error } = await supabase.from('reminders').update(body).eq('id', id).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
 
-  // Bulk fetches — pour Dashboard (évite N+1)
-  getAllMembers:  () => req('/members'),
-  getAllExpenses: () => req('/expenses?_sort=date&_order=desc'),
-  getAllPayments: () => req('/payments?_sort=createdAt&_order=desc'),
+  // Bulk (Dashboard)
+  getAllMembers: async () => {
+    const { data, error } = await supabase.from('members').select('*')
+    if (error) throw new Error(error.message)
+    return data
+  },
+  getAllExpenses: async () => {
+    const { data, error } = await supabase.from('expenses').select('*').order('date', { ascending: false })
+    if (error) throw new Error(error.message)
+    return data
+  },
+  getAllPayments: async () => {
+    const { data, error } = await supabase.from('payments').select('*').order('createdAt', { ascending: false })
+    if (error) throw new Error(error.message)
+    return data
+  },
 
-  // Expenses — filtrage temporel
-  getExpensesByMonth: (groupId, month) =>
-    req(`/expenses?groupId=${groupId}&month=${month}&_sort=date&_order=desc`),
-  getExpensesByYear: (groupId, year) =>
-    req(`/expenses?groupId=${groupId}&year=${year}&_sort=date&_order=desc`),
-  getExpensesByRange: (groupId, from, to) =>
-    req(`/expenses?groupId=${groupId}&date_gte=${from}&date_lte=${to}&_sort=date&_order=desc`),
+  // Filtrage temporel
+  getExpensesByMonth: async (groupId, month) => {
+    const { data, error } = await supabase.from('expenses').select('*')
+      .eq('groupId', groupId).eq('month', month).order('date', { ascending: false })
+    if (error) throw new Error(error.message)
+    return data
+  },
+  getExpensesByYear: async (groupId, year) => {
+    const { data, error } = await supabase.from('expenses').select('*')
+      .eq('groupId', groupId).eq('year', year).order('date', { ascending: false })
+    if (error) throw new Error(error.message)
+    return data
+  },
+  getExpensesByRange: async (groupId, from, to) => {
+    const { data, error } = await supabase.from('expenses').select('*')
+      .eq('groupId', groupId).gte('date', from).lte('date', to).order('date', { ascending: false })
+    if (error) throw new Error(error.message)
+    return data
+  },
 
-  // Guests (membres sans compte)
-  // userId omis intentionnellement — json-server crashe sur userId:null dans getRemovable()
-  getGuestsByGroup: (groupId) => req(`/members?groupId=${groupId}&isGuest=true`),
-  addGuest: ({ userId: _ignored, invitedByUserId: _ignored2, ...data }) =>
-    req('/members', { method: 'POST', body: { ...data, isGuest: true, role: 'guest' } }),
+  // Users / Profiles
+  getUserByEmail: async (email) => {
+    const { data, error } = await supabase.from('profiles').select('*').eq('email', email)
+    if (error) throw new Error(error.message)
+    return data ?? []
+  },
+
+  // Guests
+  getGuestsByGroup: async (groupId) => {
+    const { data, error } = await supabase.from('members').select('*')
+      .eq('groupId', groupId).eq('isGuest', true)
+    if (error) throw new Error(error.message)
+    return data
+  },
+  addGuest: async ({ userId: _a, invitedByUserId: _b, ...body }) => {
+    const { data, error } = await supabase.from('members')
+      .insert({ ...body, isGuest: true, role: 'guest' }).select().single()
+    if (error) throw new Error(error.message)
+    return data
+  },
 }

@@ -8,6 +8,7 @@ import ExpenseWizard from './components/ExpenseWizard'
 import ParticipationWizard from './components/ParticipationWizard'
 import ParticipationCategoryPicker from './components/ParticipationCategoryPicker'
 import Login from './pages/Login'
+import ResetPassword from './pages/ResetPassword'
 import Dashboard from './pages/Dashboard'
 import ExpenseManager from './modules/expenses/ExpenseManager'
 import BudgetDashboard from './pages/BudgetDashboard'
@@ -24,7 +25,7 @@ const NAV = [
 ]
 
 export default function App() {
-  const { user, login, logout, validating } = useAuth()
+  const { user, login, logout, validating, recoveryMode } = useAuth()
   const {
     groups, topGroups, subGroups, activeGroup, selectGroup,
     members, expenses, payments, reminders, loading, refresh,
@@ -78,7 +79,8 @@ export default function App() {
   }
 
   if (validating) return null
-  if (!user) return <Login onLogin={login} />
+  if (recoveryMode) return <ResetPassword />
+  if (!user) return <Login />
 
   const s = {
     app: { display: 'flex', height: '100vh', overflow: 'hidden' },

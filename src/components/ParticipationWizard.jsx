@@ -260,6 +260,7 @@ export default function ParticipationWizard({ open, onClose, onSaved }) {
         initials: initials(groupName),
         type: 'ponctuel',
         parentId: null,
+        createdBy: user.id,
         createdAt: new Date().toISOString(),
       })
 

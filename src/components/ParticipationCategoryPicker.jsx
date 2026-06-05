@@ -3,6 +3,7 @@ import Modal from './Modal'
 import Spinner from './Spinner'
 import { api } from '../utils/api'
 import { useAuth } from '../utils/AuthContext'
+import { useToast } from '../utils/ToastContext'
 import { CATEGORIES } from '../utils/balance'
 
 const CAT_COLORS = {
@@ -16,6 +17,7 @@ const CAT_COLORS = {
 
 export default function ParticipationCategoryPicker({ open, onClose, onCreated }) {
   const { user } = useAuth()
+  const toast = useToast()
   const [creating, setCreating] = useState(null)
 
   useEffect(() => { if (!open) setCreating(null) }, [open])
@@ -34,6 +36,7 @@ export default function ParticipationCategoryPicker({ open, onClose, onCreated }
         initials: ini,
         type: 'occasional',
         parentId: null,
+        createdBy: user.id,
         createdAt: new Date().toISOString(),
       })
 
@@ -55,6 +58,7 @@ export default function ParticipationCategoryPicker({ open, onClose, onCreated }
       onCreated(group, [member])
     } catch (err) {
       console.error(err)
+      toast.error('Impossible de créer la participation. Réessayez.')
     } finally {
       setCreating(null)
     }

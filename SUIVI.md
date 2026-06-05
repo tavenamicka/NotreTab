@@ -1,6 +1,6 @@
 # NotreTab — Suivi du projet
 
-> Dernière mise à jour : 2026-05-29 — Sprint OPT2 : Qualité, sécurité, données
+> Dernière mise à jour : 2026-06-05 — Sprint SUP1 : Migration Supabase + emails transactionnels
 
 ---
 
@@ -69,6 +69,25 @@ src/
 ---
 
 ## Améliorations appliquées (ordre antéchronologique)
+
+### Sprint SUP1 — Migration Supabase + emails transactionnels (2026-06-05)
+
+**Contexte :** Migration complète de json-server/bcryptjs vers Supabase (Auth + PostgreSQL). Ajout des emails transactionnels via Resend (Edge Functions). Stack mise à jour : React 18, Vite 5, Supabase, Resend.
+
+**Note opérationnelle :** Le SMTP custom (pour supprimer la limite 2 emails/h de Supabase) est une fonctionnalité Pro. En développement, désactiver temporairement "Confirm email" dans Authentication → Sign In / Providers → Email.
+
+| # | Description | Fichiers impactés | Statut |
+|---|-------------|-------------------|--------|
+| 135 | **`src/utils/supabase.js` — client Supabase** — création du client via `createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)`. Point d'entrée unique pour toutes les interactions Supabase (Auth + DB). | `src/utils/supabase.js` | ✅ Fait |
+| 136 | **`src/utils/auth.js` — migration Supabase Auth** — remplacement complet de bcryptjs/localStorage par Supabase Auth : `login` → `signInWithPassword`, `register` → `signUp` avec `user_metadata` (name, initials, color, textColor), `logout` → `signOut`, `updateUser` → `auth.updateUser`. Ajout `resetPassword(email, redirectTo)` et `updatePassword(password)` pour le flux de réinitialisation. | `src/utils/auth.js` | ✅ Fait |
+| 137 | **`src/utils/AuthContext.jsx` — gestion PASSWORD_RECOVERY** — interception de l'event `PASSWORD_RECOVERY` dans `onAuthStateChange` : positionne l'état `recoveryMode = true` quand Supabase détecte un token de reset dans l'URL. Expose `recoveryMode` et `exitRecoveryMode()` dans le contexte. Réinitialise `recoveryMode` sur `SIGNED_OUT`. | `src/utils/AuthContext.jsx` | ✅ Fait |
+| 138 | **`src/pages/Login.jsx` — confirmation email + mot de passe oublié** — trois évolutions : (1) après inscription réussie, affichage d'une vue "📬 Vérifiez votre boîte mail" au lieu d'une connexion automatique ; (2) gestion du message d'erreur spécifique "email not confirmed" lors de la connexion ; (3) ajout du flux "Mot de passe oublié ?" (lien → formulaire email → appel `resetPassword()` → confirmation d'envoi). | `src/pages/Login.jsx` | ✅ Fait |
+| 139 | **`src/pages/ResetPassword.jsx` — nouveau** — page de saisie du nouveau mot de passe, affichée quand `recoveryMode = true` (token de reset détecté). Valide le mot de passe (≥6 chars, correspondance), appelle `updatePassword()`, affiche `toast.success`, puis déconnecte l'utilisateur pour forcer une reconnexion propre. Bouton "Annuler" via `exitRecoveryMode()`. | `src/pages/ResetPassword.jsx` | ✅ Fait |
+| 140 | **`src/App.jsx` — routage ResetPassword** — import de `ResetPassword` + condition `if (recoveryMode) return <ResetPassword />` insérée entre la garde `validating` et la garde `!user`. Priorité : validating → recoveryMode → !user (login) → app principale. | `src/App.jsx` | ✅ Fait |
+| 141 | **`src/pages/Reminders.jsx` — rappel par email** — ajout du bouton ✉️ par ligne de dette : appelle la Edge Function `send-reminder` via `supabase.functions.invoke`, enregistre ensuite le rappel en base avec `status: 'email_sent'`, affiche `toast.success("Rappel envoyé à [nom] !")`. État de loading individuel par dette (`emailLoading[key]`). Bouton désactivé si le membre n'a pas d'email renseigné (tooltip explicatif). Badge "✉️ email" dans l'historique pour distinguer les rappels email des rappels manuels. | `src/pages/Reminders.jsx` | ✅ Fait |
+| 142 | **`supabase/functions/send-welcome/index.ts` — Edge Function** — envoie un email de bienvenue via Resend après inscription. Reçoit `{ name, email }`, génère un HTML stylisé avec instructions de confirmation. Appelée depuis `Login.jsx` de façon non-bloquante (`.catch(() => {})`) pour ne pas bloquer le flux d'inscription si Resend est indisponible. Clé API lue depuis `Deno.env.get('RESEND_API_KEY')`. | `supabase/functions/send-welcome/index.ts` | ✅ Fait |
+| 143 | **`supabase/functions/send-reminder/index.ts` — Edge Function** — envoie un rappel de paiement via Resend. Reçoit `{ groupName, fromMemberName, toMemberEmail, toMemberName, amount }`. Sujet : `[NotreTab] Rappel de paiement — {groupName}`. HTML avec montant mis en rouge et nom du créancier. Retourne `{ success: true, id }` ou `{ error }` avec statut HTTP approprié. | `supabase/functions/send-reminder/index.ts` | ✅ Fait |
+| — | **Configuration Resend** — clé API à stocker dans Supabase → Edge Functions → Secrets : `RESEND_API_KEY`. Adresse expéditeur : `noreply@notretab.app` (domaine vérifié) ou `onboarding@resend.dev` (test). SMTP custom (pour lever la limite 2 emails/h) requiert le plan Pro Supabase. | — | ⚙️ Config |
 
 ### Sprint OPT2 — Qualité, sécurité, données (2026-05-29)
 

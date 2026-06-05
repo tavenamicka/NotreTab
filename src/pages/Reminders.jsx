@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Avatar from '../components/Avatar'
 import Btn from '../components/Btn'
 import { computeBalances, simplifyDebts } from '../utils/balance'
 import { useToast } from '../utils/ToastContext'
 import { formatDate } from '../utils/format'
 import { api } from '../utils/api'
+import { supabase } from '../utils/supabase'
 
 export default function Reminders({ group, groupId, members, expenses, payments, reminders, onRefresh }) {
   const toast = useToast()
@@ -12,6 +13,7 @@ export default function Reminders({ group, groupId, members, expenses, payments,
   const [autoEnabled, setAutoEnabled] = useState(group?.reminderSettings?.autoEnabled ?? true)
   const [weeklySummary, setWeeklySummary] = useState(group?.reminderSettings?.weeklySummary ?? false)
   const [sent, setSent] = useState({})
+  const [emailLoading, setEmailLoading] = useState({})
 
   // Sync state when switching groups
   useEffect(() => {
@@ -19,8 +21,10 @@ export default function Reminders({ group, groupId, members, expenses, payments,
     setWeeklySummary(group?.reminderSettings?.weeklySummary ?? false)
   }, [group?.id])
 
-  const balances = computeBalances(expenses, payments, members)
-  const debts = simplifyDebts(balances)
+  const debts = useMemo(
+    () => simplifyDebts(computeBalances(expenses, payments, members)),
+    [expenses, payments, members]
+  )
   const getMember = id => members.find(m => String(m.id) === String(id))
 
   const sendReminder = async (debt) => {
@@ -37,6 +41,50 @@ export default function Reminders({ group, groupId, members, expenses, payments,
       onRefresh()
     } catch {
       toast.error('Impossible d\'envoyer le rappel.')
+    }
+  }
+
+  const sendEmailReminder = async (debt) => {
+    const debtor = getMember(debt.from)
+    const creditor = getMember(debt.to)
+    const key = `${debt.from}-${debt.to}`
+
+    if (!debtor?.email) {
+      toast.error(`${debtor?.name ?? 'Ce membre'} n'a pas d'adresse email renseignée.`)
+      return
+    }
+
+    setEmailLoading(s => ({ ...s, [key]: true }))
+    try {
+      const { error } = await supabase.functions.invoke('send-reminder', {
+        body: {
+          groupName: group?.name ?? 'NotreTab',
+          fromMemberName: creditor?.name ?? 'Un membre',
+          toMemberEmail: debtor.email,
+          toMemberName: debtor?.name ?? 'Un membre',
+          amount: debt.amount,
+        },
+      })
+
+      if (error) throw error
+
+      // Enregistrer le rappel dans la base
+      await api.createReminder({
+        groupId,
+        fromId: debt.to,
+        toId: debt.from,
+        amount: debt.amount,
+        sentAt: new Date().toISOString(),
+        status: 'email_sent'
+      })
+
+      setSent(s => ({ ...s, [key]: true }))
+      toast.success(`Rappel envoyé à ${debtor.name} !`)
+      onRefresh()
+    } catch (e) {
+      toast.error('Impossible d\'envoyer le rappel par email.')
+    } finally {
+      setEmailLoading(s => ({ ...s, [key]: false }))
     }
   }
 
@@ -93,6 +141,8 @@ export default function Reminders({ group, groupId, members, expenses, payments,
             const creditor = getMember(debt.to)
             const key = `${debt.from}-${debt.to}`
             const wasSent = sent[key]
+            const isEmailLoading = emailLoading[key]
+            const hasEmail = !!debtor?.email
             return (
               <div key={i} style={{ padding: '12px 14px', border: '0.5px solid var(--border)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--bg)' }}>
                 <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--red-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>🔔</div>
@@ -104,13 +154,27 @@ export default function Reminders({ group, groupId, members, expenses, payments,
                     {wasSent ? '✅ Rappel envoyé' : 'Rappel automatique activé'}
                   </div>
                 </div>
-                <Btn
-                  style={{ padding: '5px 12px', fontSize: '12px' }}
-                  onClick={() => sendReminder(debt)}
-                  disabled={wasSent}
-                >
-                  {wasSent ? 'Envoyé' : 'Envoyer maintenant'}
-                </Btn>
+                <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                  <Btn
+                    style={{ padding: '5px 12px', fontSize: '12px' }}
+                    onClick={() => sendReminder(debt)}
+                    disabled={wasSent}
+                  >
+                    {wasSent ? 'Envoyé' : 'Marquer'}
+                  </Btn>
+                  <Btn
+                    style={{
+                      padding: '5px 10px', fontSize: '12px',
+                      background: hasEmail && !wasSent && !isEmailLoading ? 'var(--bg-secondary)' : undefined,
+                      opacity: !hasEmail || wasSent ? 0.5 : 1,
+                    }}
+                    onClick={() => !wasSent && !isEmailLoading && sendEmailReminder(debt)}
+                    disabled={wasSent || isEmailLoading || !hasEmail}
+                    title={!hasEmail ? 'Cet utilisateur n\'a pas d\'email renseigné' : 'Envoyer un rappel par email'}
+                  >
+                    {isEmailLoading ? '…' : '✉️'}
+                  </Btn>
+                </div>
               </div>
             )
           })}
@@ -127,6 +191,7 @@ export default function Reminders({ group, groupId, members, expenses, payments,
                 <Avatar initials={to?.initials} color={to?.color} textColor={to?.textColor} size={28} />
                 <div style={{ flex: 1, fontSize: '13px', color: 'var(--text-secondary)' }}>
                   Rappel envoyé à <strong style={{ color: 'var(--text)' }}>{to?.name}</strong> — {r.amount.toFixed(2)} €
+                  {r.status === 'email_sent' && <span style={{ marginLeft: 6, fontSize: '11px', background: 'var(--green-light)', color: 'var(--green-dark)', borderRadius: 10, padding: '1px 6px' }}>✉️ email</span>}
                 </div>
                 <div style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>
                   {formatDate(r.sentAt)}

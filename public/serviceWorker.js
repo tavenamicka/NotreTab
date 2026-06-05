@@ -123,7 +123,7 @@ self.addEventListener('fetch', (event) => {
             { status: 503, headers: { 'Content-Type': 'text/html' } }
           );
         })
-    )
+    })
   );
 });
 
