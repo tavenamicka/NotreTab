@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../utils/AuthContext'
 import { useToast } from '../utils/ToastContext'
 import { api } from '../utils/api'
-import { hashPassword, verifyPassword } from '../utils/auth'
+import { login, updatePassword } from '../utils/auth'
 import { AVATAR_COLORS } from '../utils/theme'
 import Avatar from '../components/Avatar'
 import Btn from '../components/Btn'
@@ -96,15 +96,13 @@ export default function Profile({ onBack }) {
     if (pw.next !== pw.confirm) { toast.error('Les mots de passe ne correspondent pas.'); return }
     setSavingPw(true)
     try {
-      const users = await api.getUserByEmail(user.email)
-      const ok = await verifyPassword(pw.current, users[0]?.password)
-      if (!ok) { toast.error('Mot de passe actuel incorrect.'); return }
-      const hash = await hashPassword(pw.next)
-      await api.updateUser(user.id, { password: hash })
+      await login(user.email, pw.current)
+      await updatePassword(pw.next)
       setPw({ current: '', next: '', confirm: '' })
       toast.success('Mot de passe modifié.')
-    } catch {
-      toast.error('Impossible de modifier le mot de passe.')
+    } catch (err) {
+      const msg = err.message?.toLowerCase()
+      toast.error(msg?.includes('invalid') ? 'Mot de passe actuel incorrect.' : 'Impossible de modifier le mot de passe.')
     } finally { setSavingPw(false) }
   }
 
