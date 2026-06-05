@@ -1,6 +1,6 @@
 # NotreTab — Suivi du projet
 
-> Dernière mise à jour : 2026-06-05 — Sprint SUP1 : Migration Supabase + emails transactionnels
+> Dernière mise à jour : 2026-06-05 — Sprint DEP1 : Déploiement Vercel + corrections production
 
 ---
 
@@ -69,6 +69,24 @@ src/
 ---
 
 ## Améliorations appliquées (ordre antéchronologique)
+
+### Sprint DEP1 — Déploiement Vercel + corrections production (2026-06-05)
+
+**Contexte :** Premier déploiement de l'app sur Vercel. Série de bugs bloquants découverts et corrigés : node_modules commités, fichiers JSX mal nommés, colonnes Supabase manquantes, service worker cassant les mises à jour, refresh données non résilient.
+
+| # | Description | Fichiers impactés | Statut |
+|---|-------------|-------------------|--------|
+| 144 | **`node_modules` retiré du repo Git** — node_modules était indexé par Git, ce qui causait l'erreur Vercel "Permission denied / exit 126" (binaires Windows non exécutables sur Linux). `git rm -r --cached node_modules` + le `.gitignore` existant prend le relais. | `.gitignore` | ✅ Fait |
+| 145 | **`authStyles.js` → `authStyles.jsx`** — le fichier contenait du JSX mais avait l'extension `.js`. Vite (mode dev) tolérait le JSX dans `.js` via esbuild, mais Rollup (build prod) refuse. Renommage via `git mv`. | `src/utils/authStyles.jsx` | ✅ Fait |
+| 146 | **`Login.jsx` — `<Logo />` → `<AuthLogo />`** — référence orpheline `<Logo />` causait `ReferenceError: Logo is not defined` au runtime → page blanche. Remplacé par `<AuthLogo />` qui est le composant correct importé depuis `authStyles`. | `src/pages/Login.jsx` | ✅ Fait |
+| 147 | **`Profile.jsx` — `changePassword` migré vers Supabase Auth** — `verifyPassword`/`hashPassword` (bcryptjs, ancien système json-server) n'existent plus. Remplacés par `login(user.email, pw.current)` pour vérifier l'ancien mot de passe, puis `updatePassword(pw.next)` pour le mettre à jour via `supabase.auth`. | `src/pages/Profile.jsx` | ✅ Fait |
+| 148 | **Table Supabase `expenses` — recréation complète** — la table était incomplète (colonnes `createdByUserId`, `customAmounts`, `note`, `paidById`, etc. manquantes). Recréée via SQL avec toutes les colonnes requises par le payload de `ExpenseWizard` + RLS policies. | Supabase SQL | ✅ Fait |
+| 149 | **Tables `payments` et `reminders` — colonnes manquantes** — `getPaymentsByGroup` ordonnait par `createdAt` inexistant → requête en erreur → tout le `Promise.all` du refresh échouait. Ajout des colonnes manquantes via `ALTER TABLE … ADD COLUMN IF NOT EXISTS`. | Supabase SQL | ✅ Fait |
+| 150 | **`balance.js` — null-safety `splitBetween`** — `computeBalances` et `computeMyShare` crashaient si `exp.splitBetween` est `null`. Remplacé `.map(String)` par `(?? []).map(String)` dans les deux fonctions. | `src/utils/balance.js` | ✅ Fait |
+| 151 | **`useGroup.js` — `Promise.allSettled` pour le refresh** — avec `Promise.all`, une seule table en erreur (payments/reminders) bloquait l'affichage des dépenses et membres. Migré vers `Promise.allSettled` : chaque requête est indépendante, les données disponibles sont toujours affichées. | `src/hooks/useGroup.js` | ✅ Fait |
+| 152 | **Service Worker v2 — ne plus cacher `index.html`** — le SW cachait `index.html` en cache-first avec `CACHE_VERSION = 'notretab-v1'` immuable. Résultat : l'ancien bundle JS était servi après chaque déploiement Vercel (visible seulement en incognito). Correction : `index.html` toujours réseau, bump vers `v2` pour vider les caches existants. | `public/serviceWorker.js` | ✅ Fait |
+| 153 | **`api.js` + `ExpenseWizard.jsx` — recherche membre live** — la recherche de membre dans le wizard exigeait l'email complet exact. Remplacé par une recherche partielle (nom OU email, dès 2 caractères) via `supabase.from('profiles').ilike`. Affichage live d'une liste de résultats cliquables sans bouton "Chercher". | `src/utils/api.js`, `src/components/ExpenseWizard.jsx` | ✅ Fait |
+| — | **`supabase/create_profiles.sql` — table `profiles` + backfill** — script SQL à exécuter dans Supabase pour créer la table `profiles`, configurer les RLS, installer le trigger de sync `on_auth_user_created`, et importer les utilisateurs existants depuis `auth.users`. Prérequis pour la recherche de membre. | `supabase/create_profiles.sql` | ✅ Fait |
 
 ### Sprint SUP1 — Migration Supabase + emails transactionnels (2026-06-05)
 
