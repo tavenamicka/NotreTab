@@ -16,19 +16,17 @@ export function useGroup(groupId) {
     const gen = ++genRef.current
     setLoading(true)
     try {
-      const [m, e, p, r] = await Promise.all([
+      const [m, e, p, r] = await Promise.allSettled([
         api.getMembersByGroup(groupId),
         api.getExpensesByGroup(groupId),
         api.getPaymentsByGroup(groupId),
         api.getRemindersByGroup(groupId),
       ])
       if (gen !== genRef.current) return
-      setMembers(m)
-      setExpenses(e)
-      setPayments(p)
-      setReminders(r)
-    } catch {
-      if (gen === genRef.current) toast?.error('Impossible de charger les données du groupe.')
+      if (m.status === 'fulfilled') setMembers(m.value)
+      if (e.status === 'fulfilled') setExpenses(e.value)
+      if (p.status === 'fulfilled') setPayments(p.value)
+      if (r.status === 'fulfilled') setReminders(r.value)
     } finally {
       if (gen === genRef.current) setLoading(false)
     }
