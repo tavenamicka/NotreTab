@@ -159,6 +159,15 @@ export const api = {
     if (error) throw new Error(error.message)
     return data ?? []
   },
+  searchProfiles: async (query) => {
+    const q = query.trim()
+    if (q.length < 2) return []
+    const { data, error } = await supabase.from('profiles').select('*')
+      .or(`email.ilike.%${q}%,name.ilike.%${q}%`)
+      .limit(8)
+    if (error) throw new Error(error.message)
+    return data ?? []
+  },
 
   // Guests
   getGuestsByGroup: async (groupId) => {

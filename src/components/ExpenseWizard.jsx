@@ -63,8 +63,8 @@ export default function ExpenseWizard({ open, onClose, groupId, members: propMem
   const [guestForm, setGuestForm] = useState({ name: '', email: '' })
   const [guestLoading, setGuestLoading] = useState(false)
   const [showMemberSearch, setShowMemberSearch] = useState(false)
-  const [memberEmail, setMemberEmail] = useState('')
-  const [memberFound, setMemberFound] = useState(null)
+  const [memberQuery, setMemberQuery] = useState('')
+  const [memberResults, setMemberResults] = useState([])
   const [memberSearchErr, setMemberSearchErr] = useState('')
   const [memberSearchLoading, setMemberSearchLoading] = useState(false)
   const [errors, setErrors] = useState({})
@@ -83,8 +83,8 @@ export default function ExpenseWizard({ open, onClose, groupId, members: propMem
       setShowGuestForm(false)
       setGuestForm({ name: '', email: '' })
       setShowMemberSearch(false)
-      setMemberEmail('')
-      setMemberFound(null)
+      setMemberQuery('')
+      setMemberResults([])
       setMemberSearchErr('')
     }
     if (!open) initKey.current = ''
@@ -243,23 +243,17 @@ export default function ExpenseWizard({ open, onClose, groupId, members: propMem
 
   // ── Member search (invite existing user) ──
 
-  const searchMember = async () => {
-    if (!memberEmail.trim()) return
+  const handleMemberQueryChange = async (val) => {
+    setMemberQuery(val)
     setMemberSearchErr('')
-    setMemberFound(null)
+    setMemberResults([])
+    if (val.trim().length < 2) return
     setMemberSearchLoading(true)
     try {
-      const users = await api.getUserByEmail(memberEmail.trim().toLowerCase())
-      if (!users.length) {
-        setMemberSearchErr('Aucun compte trouvé avec cet email.')
-        return
-      }
-      const u = users[0]
-      if (members.some(m => String(m.userId) === String(u.id))) {
-        setMemberSearchErr('Cette personne est déjà dans le groupe.')
-        return
-      }
-      setMemberFound(u)
+      const results = await api.searchProfiles(val)
+      const filtered = results.filter(u => !members.some(m => String(m.userId) === String(u.id)))
+      if (!filtered.length) setMemberSearchErr('Aucun compte trouvé.')
+      setMemberResults(filtered)
     } catch {
       setMemberSearchErr('Erreur lors de la recherche.')
     } finally {
@@ -267,26 +261,25 @@ export default function ExpenseWizard({ open, onClose, groupId, members: propMem
     }
   }
 
-  const addFoundMember = async () => {
-    if (!memberFound) return
+  const addFoundMember = async (profile) => {
     setMemberSearchLoading(true)
     try {
       const newMember = await api.addMember({
         groupId,
-        userId: memberFound.id,
-        name: memberFound.name,
-        email: memberFound.email,
-        initials: memberFound.initials,
-        color: memberFound.color,
-        textColor: memberFound.textColor,
+        userId: profile.id,
+        name: profile.name,
+        email: profile.email,
+        initials: profile.initials,
+        color: profile.color,
+        textColor: profile.textColor,
         role: 'member',
         isGuest: false,
       })
       setMembers(prev => [...prev, newMember])
       setForm(f => ({ ...f, splitBetween: [...f.splitBetween, String(newMember.id)] }))
       setShowMemberSearch(false)
-      setMemberEmail('')
-      setMemberFound(null)
+      setMemberQuery('')
+      setMemberResults([])
       setMemberSearchErr('')
     } finally {
       setMemberSearchLoading(false)
@@ -490,33 +483,36 @@ export default function ExpenseWizard({ open, onClose, groupId, members: propMem
 
             {showMemberSearch && (
               <div style={{ marginTop: '10px', padding: '10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <input style={{ ...inp, flex: 1 }} type="email"
-                    placeholder="email@exemple.com"
-                    value={memberEmail}
-                    onChange={e => { setMemberEmail(e.target.value); setMemberFound(null); setMemberSearchErr('') }}
-                    onKeyDown={e => e.key === 'Enter' && searchMember()} />
-                  <Btn onClick={searchMember} disabled={memberSearchLoading || !memberEmail.trim()}>
-                    {memberSearchLoading ? <Spinner /> : 'Chercher'}
-                  </Btn>
+                <div style={{ position: 'relative' }}>
+                  <input style={{ ...inp, paddingRight: 32 }}
+                    placeholder="Nom ou email (2 caractères min)…"
+                    value={memberQuery}
+                    onChange={e => handleMemberQueryChange(e.target.value)}
+                    autoFocus
+                  />
+                  {memberSearchLoading && (
+                    <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)' }}>
+                      <Spinner size={14} />
+                    </div>
+                  )}
                 </div>
                 {memberSearchErr && (
                   <div style={{ fontSize: '11px', color: 'var(--red)' }}>{memberSearchErr}</div>
                 )}
-                {memberFound && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'var(--green-light)', borderRadius: 'var(--radius)', border: '0.5px solid var(--green)' }}>
-                    <Avatar initials={memberFound.initials} color={memberFound.color} textColor={memberFound.textColor} size={28} />
+                {memberResults.map(u => (
+                  <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'var(--bg)', borderRadius: 'var(--radius)', border: '0.5px solid var(--border)' }}>
+                    <Avatar initials={u.initials} color={u.color} textColor={u.textColor} size={28} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--green-dark)' }}>{memberFound.name}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--green-dark)', opacity: 0.8 }}>{memberFound.email}</div>
+                      <div style={{ fontSize: '13px', fontWeight: 500 }}>{u.name}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{u.email}</div>
                     </div>
-                    <Btn variant="primary" onClick={addFoundMember} disabled={memberSearchLoading}>
-                      {memberSearchLoading ? <Spinner /> : 'Ajouter'}
+                    <Btn variant="primary" onClick={() => addFoundMember(u)} disabled={memberSearchLoading}>
+                      Ajouter
                     </Btn>
                   </div>
-                )}
+                ))}
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Btn onClick={() => { setShowMemberSearch(false); setMemberEmail(''); setMemberFound(null); setMemberSearchErr('') }}>
+                  <Btn onClick={() => { setShowMemberSearch(false); setMemberQuery(''); setMemberResults([]); setMemberSearchErr('') }}>
                     Annuler
                   </Btn>
                 </div>
