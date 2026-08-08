@@ -1,0 +1,18 @@
+[
+  {
+    "id": "deploy",
+    "execute-command": "/opt/notretab/docker/deploy.sh",
+    "command-working-directory": "/opt/notretab",
+    "response-message": "Deploying NotreTab...\n",
+    "trigger-rule": {
+      "match": {
+        "type": "value",
+        "value": "CHANGE_ME_WEBHOOK_SECRET",
+        "parameter": {
+          "source": "header",
+          "name": "X-Webhook-Token"
+        }
+      }
+    }
+  }
+]

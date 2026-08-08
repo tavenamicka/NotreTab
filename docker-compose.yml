@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+
+  # ── API : json-server ─────────────────────────────────────────────────────────
+  notretab-api:
+    build:
+      context: .
+      dockerfile: api.Dockerfile
+    volumes:
+      - db_data:/data          # db.json persistant entre les déploiements
+    restart: unless-stopped
+    networks:
+      - notretab
+    # Pas de ports exposés : accessible uniquement par nginx via le réseau Docker
+
+  # ── Frontend : nginx + build React ───────────────────────────────────────────
+  notretab-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"              # http://<hote>:8080
+    depends_on:
+      - notretab-api
+    restart: unless-stopped
+    networks:
+      - notretab
+
+volumes:
+  db_data:                     # Volume nommé Docker — survive aux rebuilds
+
+networks:
+  notretab:
+    driver: bridge
