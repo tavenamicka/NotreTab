@@ -1,6 +1,10 @@
 import React from 'react'
 
-export default function Btn({ children, variant = 'default', onClick, disabled, style = {}, type = 'button' }) {
+// `rest` est transmis au <button> : sans lui, `title` et surtout `aria-label`
+// étaient silencieusement ignorés. Un bouton dont le contenu est une icône n'a
+// alors aucun nom accessible — le cas s'est produit en remplaçant les croix ✕
+// par un tracé SVG, le caractère servant jusque-là de nom par défaut.
+export default function Btn({ children, variant = 'default', onClick, disabled, style = {}, type = 'button', ...rest }) {
   const base = {
     display: 'inline-flex', alignItems: 'center', gap: '6px',
     padding: '7px 14px', borderRadius: 'var(--radius)',
@@ -21,7 +25,7 @@ export default function Btn({ children, variant = 'default', onClick, disabled, 
                  variant === 'danger'  ? { ...base, ...danger } : base
 
   return (
-    <button type={type} style={{ ...merged, ...style }} onClick={onClick} disabled={disabled}
+    <button type={type} style={{ ...merged, ...style }} onClick={onClick} disabled={disabled} {...rest}
       onMouseEnter={e => { if (!disabled) e.currentTarget.style.opacity = '0.85' }}
       onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}>
       {children}

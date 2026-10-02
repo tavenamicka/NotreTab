@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { api } from './utils/api'
 import { useAuth } from './utils/AuthContext'
 import { useApp } from './utils/AppContext'
+import IconX from './components/IconX'
 import GroupModal from './components/GroupModal'
 import InviteModal from './components/InviteModal'
 import ExpenseWizard from './components/ExpenseWizard'
@@ -161,7 +162,7 @@ export default function App() {
                   <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
                   <span title="Ajouter un sous-groupe" onClick={(e) => openSubgroupModal(g.id, e)} style={{ opacity: 0, fontSize: '13px', padding: '0 2px', color: 'var(--text-tertiary)', lineHeight: 1 }} className="add-sub-btn">＋</span>
                   {isGroupAdmin && activeGroup?.id === g.id && (
-                    <span title="Supprimer" onClick={(e) => { e.stopPropagation(); setConfirmDelete(g) }} style={{ opacity: 0, fontSize: '12px', padding: '0 2px', color: 'var(--red)', lineHeight: 1 }} className="del-btn">✕</span>
+                    <span title="Supprimer" onClick={(e) => { e.stopPropagation(); setConfirmDelete(g) }} style={{ opacity: 0, padding: '0 2px', color: 'var(--red)', lineHeight: 1 }} className="del-btn"><IconX size={12} /></span>
                   )}
                   {children.length > 0 && (
                     <span onClick={(e) => toggleExpand(g.id, e)} style={{ fontSize: '10px', color: 'var(--text-tertiary)', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', marginLeft: '2px', transition: 'transform 0.2s' }}>▶</span>
@@ -172,7 +173,7 @@ export default function App() {
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: sub.color, flexShrink: 0 }} />
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</span>
                     {isGroupAdmin && (activeGroup?.id === g.id || activeGroup?.id === sub.id) && (
-                      <span title="Supprimer" onClick={(e) => { e.stopPropagation(); setConfirmDelete(sub) }} style={{ opacity: 0, fontSize: '11px', padding: '0 2px', color: 'var(--red)', lineHeight: 1 }} className="del-btn">✕</span>
+                      <span title="Supprimer" onClick={(e) => { e.stopPropagation(); setConfirmDelete(sub) }} style={{ opacity: 0, padding: '0 2px', color: 'var(--red)', lineHeight: 1 }} className="del-btn"><IconX size={11} /></span>
                     )}
                   </div>
                 ))}
@@ -208,7 +209,7 @@ export default function App() {
                   <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.name}</span>
                   <span title="Ajouter une période" onClick={(e) => openSubgroupModal(g.id, e)} style={{ opacity: 0, fontSize: '13px', padding: '0 2px', color: 'var(--text-tertiary)', lineHeight: 1 }} className="add-sub-btn">＋</span>
                   {isGroupAdmin && activeGroup?.id === g.id && (
-                    <span title="Supprimer" onClick={(e) => { e.stopPropagation(); setConfirmDelete(g) }} style={{ opacity: 0, fontSize: '12px', padding: '0 2px', color: 'var(--red)', lineHeight: 1 }} className="del-btn">✕</span>
+                    <span title="Supprimer" onClick={(e) => { e.stopPropagation(); setConfirmDelete(g) }} style={{ opacity: 0, padding: '0 2px', color: 'var(--red)', lineHeight: 1 }} className="del-btn"><IconX size={12} /></span>
                   )}
                   {children.length > 0 && (
                     <span onClick={(e) => toggleExpand(g.id, e)} style={{ fontSize: '10px', color: 'var(--text-tertiary)', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', marginLeft: '2px', transition: 'transform 0.2s' }}>▶</span>
@@ -219,7 +220,7 @@ export default function App() {
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#D97706', flexShrink: 0 }} />
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</span>
                     {isGroupAdmin && (activeGroup?.id === g.id || activeGroup?.id === sub.id) && (
-                      <span title="Supprimer" onClick={(e) => { e.stopPropagation(); setConfirmDelete(sub) }} style={{ opacity: 0, fontSize: '11px', padding: '0 2px', color: 'var(--red)', lineHeight: 1 }} className="del-btn">✕</span>
+                      <span title="Supprimer" onClick={(e) => { e.stopPropagation(); setConfirmDelete(sub) }} style={{ opacity: 0, padding: '0 2px', color: 'var(--red)', lineHeight: 1 }} className="del-btn"><IconX size={11} /></span>
                     )}
                   </div>
                 ))}

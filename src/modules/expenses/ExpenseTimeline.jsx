@@ -2,6 +2,7 @@ import React from 'react'
 import Avatar from '../../components/Avatar'
 import Badge from '../../components/Badge'
 import Btn from '../../components/Btn'
+import IconX from '../../components/IconX'
 import GuestBadge from '../../components/GuestBadge'
 import { CATEGORIES, computeMyShare } from '../../utils/balance'
 import { formatMonth } from '../../utils/format'
@@ -100,8 +101,8 @@ export default function ExpenseTimeline({ byMonth, members, myMemberId, isAdmin,
                         <Btn style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => onEdit(exp)} title="Modifier">
                           ✏️
                         </Btn>
-                        <Btn style={{ padding: '4px 8px', fontSize: '14px' }} onClick={() => onDelete(exp)} title="Supprimer">
-                          ✕
+                        <Btn style={{ padding: '4px 8px', fontSize: '14px' }} onClick={() => onDelete(exp)} title="Supprimer" aria-label="Supprimer la dépense">
+                          <IconX size={12} />
                         </Btn>
                       </div>
                     )}

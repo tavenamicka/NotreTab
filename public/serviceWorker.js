@@ -3,9 +3,28 @@
  * Stratégie : Cache-first pour assets, Network-first pour l'API
  */
 
-const CACHE_VERSION = 'notretab-v2';
+// v3 : purge les caches v2, qui contenaient les réponses de /api/users —
+// dont celle de l'authentification, qui transporte le hash bcrypt (V09).
+const CACHE_VERSION = 'notretab-v3';
 const ASSET_CACHE = `${CACHE_VERSION}-assets`;
 const API_CACHE = `${CACHE_VERSION}-api`;
+
+/**
+ * Routes jamais mises en cache : les comptes.
+ * `/api/users?email=<exact>` renvoie le hash bcrypt (l'authentification le
+ * compare dans le navigateur), et le cache du service worker est persisté sur
+ * le disque du profil. Les autres collections restent cachées : c'est ce qui
+ * fait le mode hors ligne, et ce sont des données que l'utilisateur possède.
+ */
+function isAccountRoute(pathname) {
+  return pathname === '/api/users'
+    || pathname.startsWith('/api/users/')
+    // /api/auth/* : une réponse d'authentification ne se rejoue pas depuis le
+    // disque. Démarrer hors ligne reste possible — AuthContext conserve la
+    // session quand /auth/me échoue pour cause de réseau, et ne la ferme que
+    // sur un 401 explicite.
+    || pathname.startsWith('/api/auth/');
+}
 
 // Ne pas pré-cacher index.html — il doit toujours venir du réseau
 // pour que le bon bundle JS (hash Vite) soit référencé après déploiement
@@ -37,7 +56,7 @@ self.addEventListener('activate', (event) => {
 
   event.waitUntil(
     caches.keys().then((cacheNames) => {
-      return Promise.all(
+      const purgeOldVersions = Promise.all(
         cacheNames
           .filter((name) => name.startsWith('notretab-') && name !== ASSET_CACHE && name !== API_CACHE)
           .map((name) => {
@@ -45,6 +64,23 @@ self.addEventListener('activate', (event) => {
             return caches.delete(name);
           })
       );
+
+      // Ceinture et bretelles : purge toute entrée de compte qui aurait été
+      // écrite dans le cache courant (version non bumpée, régression future).
+      const purgeAccounts = caches.open(API_CACHE).then((cache) =>
+        cache.keys().then((requests) =>
+          Promise.all(
+            requests
+              .filter((req) => isAccountRoute(new URL(req.url).pathname))
+              .map((req) => {
+                console.log('[SW] Purging cached account response:', req.url);
+                return cache.delete(req);
+              })
+          )
+        )
+      );
+
+      return Promise.all([purgeOldVersions, purgeAccounts]);
     })
   );
 
@@ -63,6 +99,18 @@ self.addEventListener('fetch', (event) => {
 
   // API : Network-first (données toujours fraîches, offline fallback)
   if (url.pathname.startsWith('/api')) {
+    const offline = () =>
+      new Response(
+        JSON.stringify({ error: 'Offline - API unavailable' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+
+    // Les comptes ne sont ni écrits ni relus depuis le cache : réseau ou rien.
+    if (isAccountRoute(url.pathname)) {
+      event.respondWith(fetch(request).catch(offline));
+      return;
+    }
+
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -83,10 +131,7 @@ self.addEventListener('fetch', (event) => {
               return cachedResponse;
             }
             // Pas de cache : erreur
-            return new Response(
-              JSON.stringify({ error: 'Offline - API unavailable' }),
-              { status: 503, headers: { 'Content-Type': 'application/json' } }
-            );
+            return offline();
           });
         })
     );

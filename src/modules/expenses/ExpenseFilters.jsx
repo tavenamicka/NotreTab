@@ -1,4 +1,5 @@
 import React from 'react'
+import IconX from '../../components/IconX'
 import { CATEGORIES } from '../../utils/balance'
 import { formatMonth } from '../../utils/format'
 
@@ -81,7 +82,7 @@ export default function ExpenseFilters({ filter, setFilter, availableMonths }) {
             border: '0.5px solid var(--border-hover)', background: 'transparent',
             color: 'var(--text-tertiary)', fontSize: '11px', fontFamily: 'inherit',
           }}>
-            Effacer ✕
+            Effacer <IconX size={9} strokeWidth={2} />
           </button>
         )}
 

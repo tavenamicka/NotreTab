@@ -17,8 +17,12 @@ export default function Login() {
     setError(''); setLoading(true)
     try {
       await auth.login(form.email.trim().toLowerCase(), form.password)
-    } catch {
-      setError('Email ou mot de passe incorrect.')
+    } catch (e) {
+      // Un verrouillage doit se distinguer d'un mauvais mot de passe : sinon
+      // l'utilisateur réessaie en boucle sans comprendre pourquoi ça échoue.
+      // Le reste garde un message volontairement vague — le serveur ne dit pas
+      // si l'adresse a un compte, l'interface ne doit pas le dire non plus.
+      setError(e?.status === 429 ? e.message : 'Email ou mot de passe incorrect.')
     } finally { setLoading(false) }
   }
 
@@ -27,7 +31,9 @@ export default function Login() {
     try {
       if (!form.name.trim())  { setError('Nom requis.'); setLoading(false); return }
       if (!form.email.trim()) { setError('Email requis.'); setLoading(false); return }
-      if (form.password.length < 6) { setError('Mot de passe trop court (6 caractères minimum).'); setLoading(false); return }
+      // Doit rester aligné sur MIN_PASSWORD_LENGTH dans server/auth.cjs, qui
+      // tranche pour de bon — cette validation n'est qu'un confort de saisie.
+      if (form.password.length < 8) { setError('Mot de passe trop court (8 caractères minimum).'); setLoading(false); return }
       if (form.password !== form.confirm) { setError('Les mots de passe ne correspondent pas.'); setLoading(false); return }
 
       const palette = AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]

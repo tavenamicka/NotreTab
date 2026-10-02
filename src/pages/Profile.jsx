@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../utils/AuthContext'
 import { useToast } from '../utils/ToastContext'
 import { api } from '../utils/api'
-import { login, updatePassword, allocateShareId } from '../utils/auth'
+import { updatePassword, allocateShareId } from '../utils/auth'
 import { AVATAR_COLORS } from '../utils/theme'
 import Avatar from '../components/Avatar'
 import Btn from '../components/Btn'
@@ -138,17 +138,17 @@ export default function Profile({ onBack }) {
   // ── Changer le mot de passe ───────────────────────────────────────────────
   const changePassword = async () => {
     if (!pw.current || !pw.next || !pw.confirm) { toast.error('Tous les champs sont requis.'); return }
-    if (pw.next.length < 6) { toast.error('Mot de passe trop court (6 caractères minimum).'); return }
+    if (pw.next.length < 8) { toast.error('Mot de passe trop court (8 caractères minimum).'); return }
     if (pw.next !== pw.confirm) { toast.error('Les mots de passe ne correspondent pas.'); return }
     setSavingPw(true)
     try {
-      await login(user.email, pw.current)
-      await updatePassword(user.id, pw.next)
+      // Le serveur vérifie le mot de passe actuel et hache le nouveau : plus
+      // besoin de se reconnecter pour prouver son identité.
+      await updatePassword(pw.current, pw.next)
       setPw({ current: '', next: '', confirm: '' })
       toast.success('Mot de passe modifié.')
     } catch (err) {
-      const msg = err.message?.toLowerCase()
-      toast.error(msg?.includes('invalid') ? 'Mot de passe actuel incorrect.' : 'Impossible de modifier le mot de passe.')
+      toast.error(err.message || 'Impossible de modifier le mot de passe.')
     } finally { setSavingPw(false) }
   }
 

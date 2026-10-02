@@ -14,11 +14,24 @@ describe('Modal — comportement de base', () => {
     expect(screen.queryByText('Mon titre')).not.toBeInTheDocument()
   })
 
-  it('appelle onClose au clic sur le bouton ✕', () => {
+  it('appelle onClose au clic sur le bouton de fermeture', () => {
     const onClose = vi.fn()
     render(<Modal open onClose={onClose} title="T">X</Modal>)
-    fireEvent.click(screen.getByText('✕'))
+    // Ciblé par son libellé accessible, pas par son contenu : le test ne doit
+    // pas casser parce qu'on change la façon de dessiner la croix.
+    fireEvent.click(screen.getByLabelText('Fermer'))
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  // Régression : la croix était le caractère ✕ (U+2715), absent d'Inter. Le
+  // navigateur retombait sur une police système et affichait un carré
+  // « glyphe manquant » sur certains postes. Un tracé SVG ne dépend d'aucune
+  // police — ne pas revenir à un caractère.
+  it('dessine la croix en SVG, sans dépendre d’une police', () => {
+    render(<Modal open onClose={() => {}} title="T">X</Modal>)
+    const bouton = screen.getByLabelText('Fermer')
+    expect(bouton.querySelector('svg')).not.toBeNull()
+    expect(bouton.textContent).toBe('')
   })
 
   it('appelle onClose sur touche Escape', () => {

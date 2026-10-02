@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useId } from 'react'
+import IconX from './IconX'
 
 const DURATION = 170 // ms — doit correspondre aux durées CSS (.modal-out: 0.16s, overlay-out: 0.16s)
 
@@ -22,8 +23,12 @@ const s = {
   },
   title: { fontSize: '15px', fontWeight: 600, marginBottom: '16px', color: 'var(--text)' },
   close: {
-    position: 'absolute', top: '12px', right: '12px',
-    background: 'none', border: 'none', fontSize: '18px',
+    position: 'absolute', top: '8px', right: '8px',
+    background: 'none', border: 'none', padding: 0,
+    // Cible tactile de 32 px : le tracé ne fait que 14 px, sans quoi le bouton
+    // serait plus petit que le caractère qu'il remplace.
+    width: '32px', height: '32px', borderRadius: '8px',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     color: 'var(--text-secondary)', cursor: 'pointer',
   },
 }
@@ -105,7 +110,9 @@ export default function Modal({ open, onClose, title, children }) {
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
       >
-        <button style={s.close} onClick={onClose} aria-label="Fermer">✕</button>
+        <button style={s.close} onClick={onClose} aria-label="Fermer">
+          <IconX size={14} />
+        </button>
         {title && <div id={titleId} style={s.title}>{title}</div>}
         {children}
       </div>

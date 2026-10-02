@@ -1,3 +1,6 @@
 node_modules
 dist
 .env
+# Secret de signature des jetons d'authentification, généré au premier
+# démarrage (server/auth.cjs). Ne doit jamais être versionné.
+.auth-secret

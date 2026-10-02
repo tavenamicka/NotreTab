@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import Avatar from '../components/Avatar'
 import Badge from '../components/Badge'
 import Btn from '../components/Btn'
+import IconX from '../components/IconX'
 import InviteModal from '../components/InviteModal'
 import { computeBalances } from '../utils/balance'
 import { useAuth } from '../utils/AuthContext'
@@ -94,7 +95,9 @@ export default function Members({ groupId, members, expenses, payments, onRefres
                   <Btn style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => toggleRole(m)}>
                     {m.role === 'admin' ? '↓ Membre' : '↑ Admin'}
                   </Btn>
-                  <Btn style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => setConfirmRemove(m)}>✕</Btn>
+                  <Btn style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => setConfirmRemove(m)} title="Retirer" aria-label={`Retirer ${m.name}`}>
+                    <IconX size={11} />
+                  </Btn>
                 </>
               )}
             </div>

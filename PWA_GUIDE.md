@@ -51,6 +51,16 @@ La PWA fonctionne **sans connexion internet** avec les données en cache :
 ### ⚠️ Limité offline
 - Ajout/édition de dépenses : possible, mais sera synchronisée au retour online
 - API non accessible → message "Offline - API unavailable"
+- **Connexion impossible hors ligne** : les comptes ne sont jamais mis en cache
+  (voir ci-dessous). Il faut être en ligne pour se connecter ; une fois la session
+  ouverte, elle est conservée localement.
+
+### 🔒 Ce qui n'est jamais mis en cache
+Les réponses de `/api/users` sont exclues du cache, en écriture comme en lecture.
+La requête d'authentification renvoie le hash bcrypt du mot de passe — il n'a rien
+à faire sur le disque du profil navigateur. Toutes les autres collections (groupes,
+membres, dépenses, paiements, rappels) restent cachées : c'est ce qui fait le mode
+hors ligne.
 
 ### 🌐 Synchronisation auto
 Une fois la connexion rétablie :
@@ -87,12 +97,16 @@ Ctrl+Shift+J → Application → Storage → Clear site data
 
 ## 🚀 Updates et versioning
 
-Le service worker utilise `notretab-v1` comme version de cache.
+Le service worker utilise `notretab-v3` comme version de cache.
 
 ### Pour forcer une nouvelle version :
-1. Modifier `src/serviceWorker.js` — changer `CACHE_VERSION` en `'notretab-v2'`
+1. Modifier `public/serviceWorker.js` — incrémenter `CACHE_VERSION` (`'notretab-v4'`…)
 2. Redéployer l'app
 3. Les utilisateurs recevront la mise à jour au prochain accès
+
+Incrémenter la version supprime tous les caches portant l'ancien nom. C'est ce qui
+a servi au passage en `v3` : les caches `v2` contenaient des réponses `/api/users`,
+donc des hashs bcrypt, qu'il fallait effacer chez les utilisateurs existants.
 
 ### Notification de mise à jour (futur)
 Ajouter une modal :

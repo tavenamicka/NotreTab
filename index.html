@@ -23,24 +23,8 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Le service worker est enregistré dans src/main.jsx. Pas de script inline
+         ici : c'est ce qui permet une CSP en script-src 'self' sans hash. -->
     <script type="module" src="/src/main.jsx"></script>
-
-    <!-- Service Worker Registration -->
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker
-            .register('/serviceWorker.js')
-            .then((registration) => {
-              console.log('[App] Service Worker registered:', registration);
-            })
-            .catch((error) => {
-              console.warn('[App] Service Worker registration failed:', error);
-            });
-        });
-      } else {
-        console.log('[App] Service Workers not supported');
-      }
-    </script>
   </body>
 </html>

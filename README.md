@@ -8,7 +8,13 @@ Application web de gestion de dépenses partagées — colocation, voyages, sort
 
 📸 Aperçu
 
-<img width="1915" height="811" alt="image" src="https://github.com/user-attachments/assets/a86023a3-ec70-4bc9-9cfe-04af215cc665" />
+Captures réalisées sur des données fictives.
+
+![Tableau de bord : soldes, participations ponctuelles et budgets communs](docs/screenshots/tableau-de-bord.png)
+
+![Groupe : répartition par catégorie, soldes simplifiés, dépenses](docs/screenshots/groupe.png)
+
+<img src="docs/screenshots/nouvelle-depense.png" alt="Ajout d'une dépense en trois étapes" width="360">
 
 ## Structure du projet
 
@@ -84,7 +90,7 @@ Ouvrir **http://localhost:5173** dans le navigateur.
 ## Tests
 
 ```bash
-npm test          # 103 tests (logique pure, composants React, middleware API)
+npm test          # 114 tests (logique pure, composants React, middleware API)
 npm run test:watch
 ```
 

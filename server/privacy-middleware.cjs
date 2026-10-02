@@ -6,16 +6,26 @@
 //
 // Règles sur la collection `users` :
 //   • GET /users sans filtre autorisé            → 403 (pas de listing global)
-//   • GET /users?email=<exact>                   → autorisé : authentification
 //   • GET /users?shareId=<exact>                 → autorisé : ajout par identifiant
 //   • GET /users?discoverable=true&…             → autorisé : recherche des comptes visibles
 //   • GET /users/:id                             → 403 (pas de lecture de profil tiers)
-//   • Toute réponse hors authentification est débarrassée du champ `password`.
+//   • Le champ `password` est retiré de TOUTES les réponses, sans exception.
 //
-// ⚠️ Limite assumée : la connexion compare le hash bcrypt dans le navigateur,
-// donc la requête par email exact doit encore renvoyer `password`. Fermer ce
-// dernier canal suppose de déplacer l'authentification côté serveur.
-
+// Depuis le sprint S4, `?email=<exact>` n'est plus un filtre autorisé et le hash
+// bcrypt ne sort plus jamais : l'authentification est passée côté serveur
+// (`POST /auth/login` dans server/auth.cjs), le navigateur ne compare plus rien.
+// C'est ce qui ferme complètement V03, qui n'était jusque-là qu'atténuée.
+//
+// ⚠️ Autoriser un filtre ne suffit pas : le middleware le RÉAPPLIQUE lui-même sur
+// la réponse. json-server 0.17 écarte silencieusement un filtre dont la clé
+// n'existe sur aucun enregistrement — `?shareId=X` sur une base où personne n'a
+// encore de `shareId` renvoyait donc toute la collection, et le 403 sur le
+// listing nu se contournait en ajoutant un `?shareId=` bidon. Constaté en
+// production le 2026-08-09 (aucun compte n'avait encore de `shareId`, la
+// migration `ensureShareId()` étant paresseuse et déclenchée au login).
+// Ne pas déléguer le filtrage à json-server : il est optionnel côté json-server,
+// il est la garantie ici.
+//
 const PRIVATE_FIELDS = ['password']
 
 function strip(payload) {
@@ -28,11 +38,39 @@ function strip(payload) {
   return payload
 }
 
+/**
+ * Prédicats correspondant aux filtres autorisés présents dans la query.
+ * Un compte auquel le champ manque est exclu, jamais renvoyé par défaut.
+ */
+function buildFilters(q) {
+  const filters = []
+
+  if (typeof q.shareId === 'string' && q.shareId.length > 0) {
+    filters.push((u) => String(u.shareId ?? '') === q.shareId)
+  }
+  if (q.discoverable === 'true') {
+    filters.push((u) => u.discoverable === true || String(u.discoverable) === 'true')
+  }
+
+  return filters
+}
+
+/** N'applique les prédicats qu'aux collections ; un objet seul passe tel quel. */
+function applyFilters(payload, filters) {
+  if (!filters.length || !Array.isArray(payload)) return payload
+  return payload.filter(
+    (item) => item && typeof item === 'object' && filters.every((f) => f(item))
+  )
+}
+
 /** Remplace res.json/res.jsonp pour filtrer ce que json-server s'apprête à écrire. */
-function stripResponse(res) {
+function transformResponse(res, { filters = [], stripPassword = true } = {}) {
   for (const method of ['json', 'jsonp']) {
     const original = res[method].bind(res)
-    res[method] = (body) => original(strip(body))
+    res[method] = (body) => {
+      const filtered = applyFilters(body, filters)
+      return original(stripPassword ? strip(filtered) : filtered)
+    }
   }
 }
 
@@ -54,22 +92,20 @@ module.exports = (req, res, next) => {
     }
 
     const q = req.query || {}
-    const byEmail = typeof q.email === 'string' && q.email.length > 0
     const byShareId = typeof q.shareId === 'string' && q.shareId.length > 0
     const discoverableOnly = q.discoverable === 'true'
 
-    if (!byEmail && !byShareId && !discoverableOnly) {
+    if (!byShareId && !discoverableOnly) {
       return res.status(403).json({
-        error: 'Recherche non autorisée : filtrez par email exact, identifiant de partage, ou discoverable=true.',
+        error: 'Recherche non autorisée : filtrez par identifiant de partage, ou discoverable=true.',
       })
     }
 
-    // Seule l'authentification a besoin du hash ; tout le reste est nettoyé.
-    if (!byEmail) stripResponse(res)
+    transformResponse(res, { filters: buildFilters(q), stripPassword: true })
     return next()
   }
 
   // POST / PATCH / PUT / DELETE : la réponse ne doit jamais réémettre le hash.
-  stripResponse(res)
+  transformResponse(res, { filters: [], stripPassword: true })
   return next()
 }

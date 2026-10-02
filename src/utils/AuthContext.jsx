@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { getSession, setSession, clearSession, login as authLogin, ensureShareId } from './auth'
-import { api } from './api'
+import { api, AuthError } from './api'
 
 const AuthContext = createContext(null)
 
@@ -8,24 +8,29 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => getSession())
   const [validating, setValidating] = useState(() => !!getSession())
 
-  // Validation de la session au démarrage : vérifie que l'utilisateur existe encore
-  // en base, et complète les comptes antérieurs au modèle de visibilité.
+  // Validation de la session au démarrage. Depuis S4 c'est le serveur qui
+  // tranche : GET /auth/me renvoie 401 si le jeton est absent, expiré ou
+  // révoqué, et le compte de référence dans la même réponse. Une session
+  // survivant dans localStorage sans jeton valide ne donne donc plus accès à
+  // rien.
   useEffect(() => {
     if (!user) { setValidating(false); return }
-    api.getUserByEmail(user.email)
-      .then(async users => {
-        if (users.length === 0 || users[0].id !== user.id) {
-          clearSession()
-          setUser(null)
-          return
-        }
-        const { password: _pw, ...fresh } = users[0]
+    api.me()
+      .then(async ({ user: fresh }) => {
         const added = await ensureShareId(fresh).catch(() => null)
         const merged = { ...fresh, ...(added || {}) }
         setSession(merged)
         setUser(merged)
       })
-      .catch(() => {})
+      .catch((err) => {
+        // Seul un refus explicite du serveur ferme la session. Une panne
+        // réseau n'en est pas un : l'app est une PWA, démarrer hors ligne doit
+        // rester possible avec la session en cache.
+        if (err instanceof AuthError) {
+          clearSession()
+          setUser(null)
+        }
+      })
       .finally(() => setValidating(false))
   }, [])
 

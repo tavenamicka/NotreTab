@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react'
+import IconX from '../components/IconX'
 
 const ToastContext = createContext(null)
 
@@ -45,7 +46,7 @@ export function ToastProvider({ children }) {
         position: 'fixed', bottom: 16, right: 16,
         display: 'flex', flexDirection: 'column', gap: 8,
         zIndex: 9999, maxWidth: 340,
-        pointerEvents: 'none',  // laisse passer les clics sur le fond sauf bouton ✕
+        pointerEvents: 'none',  // laisse passer les clics sur le fond sauf le bouton de fermeture
       }}>
         {toasts.map(t => {
           const isError   = t.type === 'error'
@@ -72,13 +73,14 @@ export function ToastProvider({ children }) {
               </span>
               <span style={{ flex: 1 }}>{t.message}</span>
               <button
+                aria-label="Fermer la notification"
                 onClick={() => dismiss(t.id)}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   color: 'inherit', opacity: 0.5, fontSize: 14,
                   lineHeight: 1, padding: '0 2px', flexShrink: 0,
                 }}
-              >✕</button>
+              ><IconX size={11} /></button>
             </div>
           )
         })}
